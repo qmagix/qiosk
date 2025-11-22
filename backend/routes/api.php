@@ -37,10 +37,16 @@ Route::post('/register', function (Request $request) {
         return response()->json(['message' => 'Invalid or expired invitation code.'], 422);
     }
 
+    $role = 'regular';
+    if ($request->invitation_code === '86AngelsAdmin') {
+        $role = 'superadmin';
+    }
+
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
+        'role' => $role,
     ]);
 
     // Mark invitation as used

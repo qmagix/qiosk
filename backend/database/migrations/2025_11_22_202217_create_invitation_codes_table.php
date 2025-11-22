@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->boolean('is_used')->default(false);
             $table->timestamp('expires_at')->nullable();
-            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('used_by')->nullable()->constrained('users');
             $table->timestamps();
         });

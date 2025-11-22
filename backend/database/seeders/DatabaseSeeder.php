@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\InvitationCode;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,13 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'admin@example.com',
-            'password' => 'password',
-            'role' => 'superadmin',
+        // Create the initial invitation code for the first admin
+        InvitationCode::create([
+            'code' => '86AngelsAdmin',
+            'is_used' => false,
+            'created_by' => null, // System generated
         ]);
     }
 }
