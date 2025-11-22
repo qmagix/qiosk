@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -48,6 +49,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::apiResource('assets', AssetController::class);
     Route::apiResource('playlists', PlaylistController::class);

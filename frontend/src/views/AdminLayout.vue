@@ -41,8 +41,16 @@ onMounted(fetchUser)
       <aside class="w-64 bg-gray-800 text-white">
         <nav class="mt-5 px-2">
           <router-link 
-            to="/admin/assets" 
+            v-if="canManageUsers"
+            to="/admin/dashboard" 
             class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700 transition ease-in-out duration-150"
+            :class="{ 'bg-gray-900': $route.name === 'dashboard' }"
+          >
+            Dashboard
+          </router-link>
+          <router-link 
+            to="/admin/assets" 
+            class="mt-1 group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700 transition ease-in-out duration-150"
             :class="{ 'bg-gray-900': $route.name === 'assets' }"
           >
             Assets

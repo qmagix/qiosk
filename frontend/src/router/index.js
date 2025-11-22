@@ -7,6 +7,7 @@ import AssetManager from '../views/AssetManager.vue'
 import PlaylistManager from '../views/PlaylistManager.vue'
 import PlaylistEditor from '../views/PlaylistEditor.vue'
 import UserManager from '../views/UserManager.vue'
+import DashboardView from '../views/DashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,7 +40,12 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/admin/assets'
+          redirect: '/admin/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: DashboardView
         },
         {
           path: 'assets',
