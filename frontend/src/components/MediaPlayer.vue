@@ -169,6 +169,7 @@ onUnmounted(() => {
           :src="currentItem.url" 
           class="media-content"
           alt="Slide"
+          @error="next"
         />
         
         <video 
@@ -179,6 +180,7 @@ onUnmounted(() => {
           muted
           playsinline
           @ended="onVideoEnded"
+          @error="next"
         ></video>
 
       </div>

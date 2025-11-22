@@ -39,10 +39,12 @@ export default defineConfig(({ mode }) => {
         workbox: {
           runtimeCaching: [
             {
-              urlPattern: new RegExp(`^${escapedApiUrl}/storage/.*`, 'i'),
+              // Cache images only. Videos (mp4/mov) often return 206 Partial Content which Cache API doesn't support well without plugins.
+              urlPattern: new RegExp(`^${escapedApiUrl}/storage/.*\\.(png|jpg|jpeg|svg|gif|webp)$`, 'i'),
               handler: 'CacheFirst',
+              method: 'GET',
               options: {
-                cacheName: 'media-assets-cache',
+                cacheName: 'media-images-cache',
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 30 // 30 Days
@@ -55,6 +57,7 @@ export default defineConfig(({ mode }) => {
             {
               urlPattern: new RegExp(`^${escapedApiUrl}/api/.*`, 'i'),
               handler: 'NetworkFirst',
+              method: 'GET',
               options: {
                 cacheName: 'api-cache',
                 expiration: {
