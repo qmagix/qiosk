@@ -51,7 +51,7 @@ class PlaylistController extends Controller
             'name' => 'sometimes|string|max:255',
             'items' => 'sometimes|array',
             'items.*.asset_id' => 'required|exists:assets,id',
-            'items.*.duration_seconds' => 'integer|min:1',
+            'items.*.duration_seconds' => 'integer|min:0',
             'items.*.transition_effect' => 'string',
         ]);
 
