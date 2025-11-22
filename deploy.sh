@@ -13,8 +13,8 @@ if [ ! -f .env ]; then
     php artisan key:generate
 fi
 composer install --optimize-autoloader
-#php artisan migrate --force
-php artisan migrate
+php artisan migrate --force
+#php artisan migrate
 php artisan storage:link || true
 cd ..
 
