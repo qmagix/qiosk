@@ -13,18 +13,24 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if ($user->isAdmin()) {
+            $stats = [
+                'is_admin' => true,
+                'total_users' => User::count(),
+                'regular_users' => User::where('role', 'regular')->count(),
+                'total_playlists' => Playlist::count(),
+                'total_assets' => Asset::count(),
+                'recent_signups' => User::latest()->take(5)->get(['id', 'name', 'email', 'created_at', 'role']),
+                'storage_usage' => 0 // Placeholder if we want to calculate file sizes later
+            ];
+        } else {
+            $stats = [
+                'is_admin' => false,
+                'total_playlists' => Playlist::where('user_id', $user->id)->count(),
+                'total_assets' => Asset::where('user_id', $user->id)->count(),
+                'recent_playlists' => Playlist::where('user_id', $user->id)->latest()->take(5)->get(),
+            ];
         }
-
-        $stats = [
-            'total_users' => User::count(),
-            'regular_users' => User::where('role', 'regular')->count(),
-            'total_playlists' => Playlist::count(),
-            'total_assets' => Asset::count(),
-            'recent_signups' => User::latest()->take(5)->get(['id', 'name', 'email', 'created_at', 'role']),
-            'storage_usage' => 0 // Placeholder if we want to calculate file sizes later
-        ];
 
         return response()->json($stats);
     }

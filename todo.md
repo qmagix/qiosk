@@ -5,5 +5,7 @@
 - [ ] compile to a single video?
 - [X]  multiple files  upload
 - [X] reduce file size but support 4K display (video file assume user already did it or the backend can do it)
-- [ ] 
+- [X] landing page
+- [ ] video for landing page
+- [ ] protection for registration
 

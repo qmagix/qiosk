@@ -11,17 +11,39 @@ use Illuminate\Support\Facades\Route;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
+use App\Models\InvitationCode;
+
 Route::post('/register', function (Request $request) {
     $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|string|email|max:255|unique:users',
         'password' => 'required|string|min:8|confirmed',
+        'invitation_code' => 'required|string|exists:invitation_codes,code',
     ]);
+
+    // Check if invitation code is valid and unused
+    $invitation = InvitationCode::where('code', $request->invitation_code)
+        ->where('is_used', false)
+        ->where(function ($query) {
+            $query->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+        })
+        ->first();
+
+    if (!$invitation) {
+        return response()->json(['message' => 'Invalid or expired invitation code.'], 422);
+    }
 
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
+    ]);
+
+    // Mark invitation as used
+    $invitation->update([
+        'is_used' => true,
+        'used_by' => $user->id,
     ]);
 
     $token = $user->createToken('api-token')->plainTextToken;
@@ -45,6 +67,8 @@ Route::post('/login', function (Request $request) {
 
 Route::get('/playlists/{slug}/play', [PlaylistController::class, 'play']);
 
+use App\Http\Controllers\InvitationCodeController;
+
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -55,4 +79,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('assets', AssetController::class);
     Route::apiResource('playlists', PlaylistController::class);
     Route::apiResource('users', UserController::class);
+    Route::apiResource('invitations', InvitationCodeController::class)->only(['index', 'store', 'update', 'destroy']);
 });

@@ -7,6 +7,7 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const passwordConfirmation = ref('')
+const invitationCode = ref('')
 const error = ref('')
 const router = useRouter()
 
@@ -16,7 +17,8 @@ const register = async () => {
       name: name.value,
       email: email.value,
       password: password.value,
-      password_confirmation: passwordConfirmation.value
+      password_confirmation: passwordConfirmation.value,
+      invitation_code: invitationCode.value
     })
     localStorage.setItem('token', response.data.token)
     axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
@@ -32,6 +34,19 @@ const register = async () => {
     <div class="bg-white p-8 rounded shadow-md w-96">
       <h1 class="text-2xl font-bold mb-6 text-center">Join EyePub</h1>
       <form @submit.prevent="register">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="invitation_code">
+            Invitation Code
+          </label>
+          <input 
+            v-model="invitationCode"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+            id="invitation_code" 
+            type="text" 
+            placeholder="Enter your invitation code"
+            required
+          >
+        </div>
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
             Name

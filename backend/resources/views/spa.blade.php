@@ -12,8 +12,8 @@
         /* overflow: hidden; Removed to allow scrolling on landing page */
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-BcY-A0Sa.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-ChnmlFU9.css">
+    <script type="module" crossorigin src="/assets/index-B-ar5PNt.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C5FwtJfw.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>
     <div id="app"></div>

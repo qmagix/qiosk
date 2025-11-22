@@ -70,6 +70,14 @@ onMounted(fetchUser)
           >
             Users
           </router-link>
+          <router-link 
+            v-if="canManageUsers"
+            to="/admin/invitations" 
+            class="mt-1 group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700 transition ease-in-out duration-150"
+            :class="{ 'bg-gray-900': $route.name === 'invitations' }"
+          >
+            Invitations
+          </router-link>
         </nav>
       </aside>
       <main class="flex-1 p-6">
