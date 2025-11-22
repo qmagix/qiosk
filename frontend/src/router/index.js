@@ -6,6 +6,7 @@ import AdminLayout from '../views/AdminLayout.vue'
 import AssetManager from '../views/AssetManager.vue'
 import PlaylistManager from '../views/PlaylistManager.vue'
 import PlaylistEditor from '../views/PlaylistEditor.vue'
+import UserManager from '../views/UserManager.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,6 +55,11 @@ const router = createRouter({
           path: 'playlists/:id',
           name: 'playlist-editor',
           component: PlaylistEditor
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: UserManager
         }
       ]
     }

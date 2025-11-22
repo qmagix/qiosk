@@ -1,12 +1,32 @@
 <script setup>
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
+const user = ref(null)
+
+const fetchUser = async () => {
+  try {
+    const response = await axios.get('/api/user', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    user.value = response.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const canManageUsers = computed(() => {
+  return user.value?.role === 'admin' || user.value?.role === 'superadmin'
+})
 
 const logout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(fetchUser)
 </script>
 
 <template>
@@ -33,6 +53,14 @@ const logout = () => {
             :class="{ 'bg-gray-900': $route.name === 'playlists' }"
           >
             Playlists
+          </router-link>
+          <router-link 
+            v-if="canManageUsers"
+            to="/admin/users" 
+            class="mt-1 group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700 transition ease-in-out duration-150"
+            :class="{ 'bg-gray-900': $route.name === 'users' }"
+          >
+            Users
           </router-link>
         </nav>
       </aside>

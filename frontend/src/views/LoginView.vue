@@ -18,7 +18,8 @@ const handleLogin = async () => {
     axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
     router.push('/admin')
   } catch (e) {
-    error.value = 'Invalid credentials'
+    console.error(e)
+    error.value = e.response?.data?.message || 'Invalid credentials'
   }
 }
 </script>
@@ -27,7 +28,7 @@ const handleLogin = async () => {
   <div class="min-h-screen flex items-center justify-center bg-gray-100">
     <div class="bg-white p-8 rounded shadow-md w-96">
       <h1 class="text-2xl font-bold mb-6 text-center">Media Kiosk Login</h1>
-      <form @submit.prevent="login">
+      <form @submit.prevent="handleLogin">
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
             Email
