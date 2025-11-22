@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Hash;
 
 use App\Models\InvitationCode;
 
+use App\Mail\NewUserRegistered;
+use Illuminate\Support\Facades\Mail;
+
 Route::post('/register', function (Request $request) {
     $request->validate([
         'name' => 'required|string|max:255',
@@ -45,6 +48,11 @@ Route::post('/register', function (Request $request) {
         'is_used' => true,
         'used_by' => $user->id,
     ]);
+
+    // Send notification email
+    if (env('ADMIN_NOTIFICATION_EMAIL')) {
+        Mail::to(env('ADMIN_NOTIFICATION_EMAIL'))->send(new NewUserRegistered($user));
+    }
 
     $token = $user->createToken('api-token')->plainTextToken;
 
