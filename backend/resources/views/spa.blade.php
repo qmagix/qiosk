@@ -12,7 +12,7 @@
         overflow: hidden; /* Prevent scrollbars on TV */
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-C1m-C5hE.js"></script>
+    <script type="module" crossorigin src="/assets/index-CSzGJlCK.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-YLc2d3ff.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>

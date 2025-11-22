@@ -25,16 +25,28 @@ const uploadFile = async (event) => {
   isUploading.value = true
   const total = files.length
   let completed = 0
-  uploadStatus.value = `Uploading 0/${total}...`
+  uploadStatus.value = `Processing & Uploading 0/${total}...`
 
   try {
     // Upload files sequentially to avoid overwhelming the server or browser
     for (let i = 0; i < total; i++) {
-      const file = files[i]
+      let file = files[i]
+      
+      // Client-side Image Compression
+      if (file.type.startsWith('image/')) {
+        try {
+          uploadStatus.value = `Compressing ${file.name}...`
+          file = await compressImage(file)
+        } catch (err) {
+          console.warn('Compression failed, uploading original.', err)
+        }
+      }
+
       const formData = new FormData()
       formData.append('file', file)
 
       try {
+        uploadStatus.value = `Uploading ${file.name}...`
         await axios.post('/api/assets', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -42,7 +54,7 @@ const uploadFile = async (event) => {
           }
         })
         completed++
-        uploadStatus.value = `Uploading ${completed}/${total}...`
+        uploadStatus.value = `Completed ${completed}/${total}`
       } catch (e) {
         console.error(`Failed to upload ${file.name}`, e)
       }
@@ -56,6 +68,65 @@ const uploadFile = async (event) => {
     isUploading.value = false
     uploadStatus.value = ''
   }
+}
+
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const maxWidth = 3840 // 4K Width
+    const maxHeight = 2160 // 4K Height
+    const quality = 0.85 // Good balance for 4K
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width)
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height)
+            height = maxHeight
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Convert to WebP for better compression/quality ratio
+        // Fallback to jpeg if webp not supported (rare nowadays)
+        const mimeType = 'image/webp'
+        
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                reject(new Error('Canvas is empty'))
+                return
+            }
+            // Create a new File object with the compressed blob
+            // Change extension to .webp
+            const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp"
+            const newFile = new File([blob], newName, {
+                type: mimeType,
+                lastModified: Date.now(),
+            })
+            resolve(newFile)
+        }, mimeType, quality)
+      }
+      img.onerror = (err) => reject(err)
+    }
+    reader.onerror = (err) => reject(err)
+  })
 }
 
 const deleteAsset = async (id) => {

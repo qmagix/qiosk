@@ -22,7 +22,7 @@ class AssetController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:jpeg,png,jpg,mp4,mov|max:51200', // 50MB max
+            'file' => 'required|file|mimes:jpeg,png,jpg,webp,mp4,mov|max:51200', // 50MB max
         ]);
 
         $file = $request->file('file');
