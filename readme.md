@@ -1,5 +1,36 @@
-I want to create app/system to display photos and videos on a TV o rany large display, where the user also can manage the media and do the selection and ordering of the display of the assets, and define display time for each selected photo.
+# Media Kiosk System
 
-The backend let's use PHP laravel + sqlite/mysql + S3, with user accounts and auth. 
+A digital signage solution built with Laravel (Backend) and Vue.js (Frontend).
 
-The frontend use electron?/vanilla js/react/vue... I am not sure, any recommendations? frontend let's it light weight enought but can also have enough support for various transition effect (mostlt css?) 
+## Features
+- **Asset Management**: Upload photos and videos.
+- **Playlist Editor**: Drag-and-drop interface to organize media.
+- **Media Player**: Auto-playing kiosk mode with transitions (Fade, Slide, Zoom).
+- **Offline Support**: PWA capabilities for offline playback.
+- **TV Optimization**: Fullscreen support and hidden cursor.
+
+## Requirements
+- PHP 8.2+
+- Node.js 20+
+- SQLite (default) or MySQL
+
+## Installation & Deployment
+
+1. **Run the deployment script**:
+   ```bash
+   ./deploy.sh
+   ```
+   This will install dependencies, build the frontend, and set up the backend.
+
+2. **PWA Icons**:
+   For the app to be installable on devices, ensure you place the following icons in `frontend/public/`:
+   - `pwa-192x192.png`
+   - `pwa-512x512.png`
+
+3. **Serve the Application**:
+   Point your web server (Nginx/Apache) to the `backend/public` directory.
+
+## Development
+
+- **Backend**: `cd backend && php artisan serve`
+- **Frontend**: `cd frontend && npm run dev`

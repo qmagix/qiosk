@@ -1,0 +1,19 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="256" height="256" fill="white"/>
+
+  <!-- TV body -->
+  <rect x="32" y="56" width="192" height="120" rx="16" ry="16"
+        fill="none" stroke="#111111" stroke-width="10"/>
+
+  <!-- TV stand -->
+  <line x1="96" y1="188" x2="160" y2="188"
+        stroke="#111111" stroke-width="10" stroke-linecap="round"/>
+  <line x1="80" y1="204" x2="176" y2="204"
+        stroke="#111111" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Stylized Q inside -->
+  <circle cx="128" cy="116" r="34"
+          fill="none" stroke="#111111" stroke-width="8"/>
+  <line x1="154" y1="142" x2="176" y2="164"
+        stroke="#111111" stroke-width="8" stroke-linecap="round"/>
+</svg>
