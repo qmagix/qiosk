@@ -26,11 +26,33 @@ class AssetController extends Controller
         ]);
 
         $file = $request->file('file');
-        // Store in storage/app/public/assets
-        $path = $file->store('assets', 'public');
-        $url = asset(Storage::url($path));
 
-        $type = str_starts_with($file->getMimeType(), 'video') ? 'video' : 'image';        $asset = $request->user()->assets()->create([
+        // Determine disk based on env
+        $disk = env('MEDIA_DISK', 'public');
+        if ($disk === 'auto') {
+            // If S3 credentials are set, use s3, otherwise public
+            if (env('AWS_ACCESS_KEY_ID') && env('AWS_BUCKET')) {
+                $disk = 's3';
+            } else {
+                $disk = 'public';
+            }
+        }
+
+        // Store file
+        // Use store() instead of storePublicly() because S3 buckets often have ACLs disabled (Bucket Owner Enforced).
+        // We rely on Bucket Policy for public access.
+        $path = $file->store('assets', $disk);
+
+        if (!$path) {
+            return response()->json(['message' => 'Failed to store file'], 500);
+        }
+
+        // Get URL
+        $url = Storage::disk($disk)->url($path);
+
+        $type = str_starts_with($file->getMimeType(), 'video') ? 'video' : 'image';
+
+        $asset = $request->user()->assets()->create([
             'type' => $type,
             'url' => $url,
             'filename' => $file->getClientOriginalName(),
