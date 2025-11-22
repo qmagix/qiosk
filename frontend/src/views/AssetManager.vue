@@ -6,6 +6,12 @@ const assets = ref([])
 const fileInput = ref(null)
 const isUploading = ref(false)
 const uploadStatus = ref('')
+const showLinkModal = ref(false)
+const linkForm = ref({
+  url: '',
+  type: 'image',
+  filename: ''
+})
 
 const fetchAssets = async () => {
   try {
@@ -14,6 +20,27 @@ const fetchAssets = async () => {
     })
     assets.value = response.data
   } catch (e) {
+    console.error(e)
+  }
+}
+
+const addLink = async () => {
+  if (!linkForm.value.url) return
+  
+  try {
+    await axios.post('/api/assets', {
+      external_url: linkForm.value.url,
+      type: linkForm.value.type,
+      filename: linkForm.value.filename
+    }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    
+    showLinkModal.value = false
+    linkForm.value = { url: '', type: 'image', filename: '' }
+    await fetchAssets()
+  } catch (e) {
+    alert('Failed to add link')
     console.error(e)
   }
 }
@@ -149,6 +176,12 @@ onMounted(fetchAssets)
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold">Asset Library</h2>
       <div>
+        <button 
+          @click="showLinkModal = true"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-2"
+        >
+          Add Link
+        </button>
         <input 
           type="file" 
           ref="fileInput" 
@@ -164,6 +197,36 @@ onMounted(fetchAssets)
         >
           {{ isUploading ? uploadStatus : 'Upload Media' }}
         </button>
+      </div>
+    </div>
+
+    <!-- Link Modal -->
+    <div v-if="showLinkModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg w-96">
+        <h3 class="text-lg font-bold mb-4">Add External Asset</h3>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">URL</label>
+          <input v-model="linkForm.url" type="url" class="w-full border rounded p-2" placeholder="https://example.com/image.jpg">
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Type</label>
+          <select v-model="linkForm.type" class="w-full border rounded p-2">
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Name (Optional)</label>
+          <input v-model="linkForm.filename" type="text" class="w-full border rounded p-2" placeholder="My Image">
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="showLinkModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+          <button @click="addLink" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Add</button>
+        </div>
       </div>
     </div>
 

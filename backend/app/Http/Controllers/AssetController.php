@@ -21,6 +21,32 @@ class AssetController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->has('external_url')) {
+            $request->validate([
+                'external_url' => 'required|url',
+                'type' => 'required|in:image,video',
+                'filename' => 'nullable|string|max:255',
+            ]);
+
+            $url = $request->external_url;
+            $type = $request->type;
+            $filename = $request->filename ?? basename($url);
+
+            // Basic cleanup of filename if it's just a domain or empty
+            if (empty($filename) || $filename === $url) {
+                $filename = 'External Asset';
+            }
+
+            $asset = $request->user()->assets()->create([
+                'type' => $type,
+                'url' => $url,
+                'filename' => $filename,
+                'mime_type' => null, // We don't know the mime type for sure without fetching headers
+            ]);
+
+            return response()->json($asset, 201);
+        }
+
         $request->validate([
             'file' => 'required|file|mimes:jpeg,png,jpg,webp,mp4,mov|max:51200', // 50MB max
         ]);
