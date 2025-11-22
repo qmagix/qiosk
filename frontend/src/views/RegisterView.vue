@@ -30,7 +30,7 @@ const register = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100">
     <div class="bg-white p-8 rounded shadow-md w-96">
-      <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
+      <h1 class="text-2xl font-bold mb-6 text-center">Join EyePub</h1>
       <form @submit.prevent="register">
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-bold mb-2" for="name">

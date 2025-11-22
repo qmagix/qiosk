@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Media Kiosk</title>
+    <title>EyePub - Publishing for Eyes</title>
     <style>
       body {
-        background-color: black;
+        background-color: white; /* Changed from black for landing page */
         margin: 0;
-        overflow: hidden; /* Prevent scrollbars on TV */
+        /* overflow: hidden; Removed to allow scrolling on landing page */
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-ClkeKsvF.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Dh6B79Qa.css">
+    <script type="module" crossorigin src="/assets/index-BcY-A0Sa.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-ChnmlFU9.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>
     <div id="app"></div>

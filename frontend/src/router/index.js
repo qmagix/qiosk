@@ -8,6 +8,7 @@ import PlaylistManager from '../views/PlaylistManager.vue'
 import PlaylistEditor from '../views/PlaylistEditor.vue'
 import UserManager from '../views/UserManager.vue'
 import DashboardView from '../views/DashboardView.vue'
+import LandingPage from '../views/LandingPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,7 +16,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      redirect: '/admin'
+      component: LandingPage
     },
     {
       path: '/play/:slug?',

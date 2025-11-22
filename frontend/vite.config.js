@@ -19,9 +19,9 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Media Kiosk',
-          short_name: 'Kiosk',
-          description: 'Digital Signage & Media Kiosk Player',
+          name: 'EyePub',
+          short_name: 'EyePub',
+          description: 'Publishing for Eyes - Digital Signage Player',
           theme_color: '#000000',
           icons: [
             {

@@ -33,7 +33,7 @@ onMounted(fetchUser)
   <div class="min-h-screen flex flex-col">
     <header class="bg-white shadow">
       <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">Media Kiosk Admin</h1>
+        <h1 class="text-2xl font-bold text-gray-900">EyePub Admin</h1>
         <button @click="logout" class="text-red-600 hover:text-red-800">Logout</button>
       </div>
     </header>
