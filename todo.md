@@ -1,7 +1,9 @@
-- [ ] user roles and user management pages
-- [ ] admin panel with user playlist stats
-- [ ] s3
-- [ ] support for links in addition to local assets? (this could make it a lot more flexible)
+- [X] user roles and user management pages
+- [X] admin panel with user playlist stats
+- [X] s3
+- [X] support for links in addition to local assets? (this could make it a lot more flexible)
 - [ ] compile to a single video?
-- [X]  multiple files  upload 
+- [X]  multiple files  upload
+- [X] reduce file size but support 4K display (video file assume user already did it or the backend can do it)
+- [ ] 
 

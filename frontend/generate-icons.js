@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const svgPath = path.join(__dirname, 'logo.svg');
+const svgPath = path.join(__dirname, 'logo_eyepub.svg');
 const publicDir = path.join(__dirname, 'public');
 const backendPublicDir = path.join(__dirname, '../backend/public');
 

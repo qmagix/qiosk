@@ -1,0 +1,41 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent background -->
+  <rect x="0" y="0" width="256" height="256" fill="none"/>
+
+  <!-- TV frame (thin rounded rectangle) -->
+  <rect
+    x="32"
+    y="48"
+    width="192"
+    height="144"
+    rx="20"
+    ry="20"
+    fill="none"
+    stroke="#000000"
+    stroke-width="6"
+  />
+
+  <!-- Outer eye shape -->
+  <path
+    d="
+      M 64 120
+      Q 96 72 128 72
+      Q 160 72 192 120
+      Q 160 168 128 168
+      Q 96 168 64 120
+      Z
+    "
+    fill="none"
+    stroke="#000000"
+    stroke-width="8"
+    stroke-linejoin="round"
+  />
+
+  <!-- Pupil -->
+  <circle
+    cx="128"
+    cy="120"
+    r="20"
+    fill="#000000"
+  />
+</svg>
