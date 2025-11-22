@@ -5,6 +5,7 @@ import axios from 'axios'
 const assets = ref([])
 const fileInput = ref(null)
 const isUploading = ref(false)
+const uploadStatus = ref('')
 
 const fetchAssets = async () => {
   try {
@@ -18,26 +19,42 @@ const fetchAssets = async () => {
 }
 
 const uploadFile = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  const formData = new FormData()
-  formData.append('file', file)
+  const files = event.target.files
+  if (!files.length) return
 
   isUploading.value = true
+  const total = files.length
+  let completed = 0
+  uploadStatus.value = `Uploading 0/${total}...`
+
   try {
-    await axios.post('/api/assets', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+    // Upload files sequentially to avoid overwhelming the server or browser
+    for (let i = 0; i < total; i++) {
+      const file = files[i]
+      const formData = new FormData()
+      formData.append('file', file)
+
+      try {
+        await axios.post('/api/assets', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        completed++
+        uploadStatus.value = `Uploading ${completed}/${total}...`
+      } catch (e) {
+        console.error(`Failed to upload ${file.name}`, e)
       }
-    })
+    }
+    
     await fetchAssets()
     fileInput.value.value = ''
   } catch (e) {
-    alert('Upload failed')
+    alert('Upload process encountered errors')
   } finally {
     isUploading.value = false
+    uploadStatus.value = ''
   }
 }
 
@@ -67,13 +84,14 @@ onMounted(fetchAssets)
           @change="uploadFile" 
           class="hidden" 
           accept="image/*,video/*"
+          multiple
         >
         <button 
           @click="$refs.fileInput.click()" 
           class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
           :disabled="isUploading"
         >
-          {{ isUploading ? 'Uploading...' : 'Upload Media' }}
+          {{ isUploading ? uploadStatus : 'Upload Media' }}
         </button>
       </div>
     </div>
