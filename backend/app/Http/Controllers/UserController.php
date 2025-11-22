@@ -17,7 +17,7 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Superadmin sees all, Admin sees admins and regulars (but logic below simplifies to all for now, 
+        // Superadmin sees all, Admin sees admins and regulars (but logic below simplifies to all for now,
         // or we can filter if needed. Let's show all but restrict actions in update/delete)
         return User::all();
     }
@@ -101,7 +101,7 @@ class UserController extends Controller
         if ($user->isSuperAdmin()) {
              return response()->json(['message' => 'Cannot delete Superadmin'], 403);
         }
-        
+
         // Prevent admin from deleting other admins (optional, but safer)
         if ($user->isAdmin() && !$currentUser->isSuperAdmin()) {
             return response()->json(['message' => 'Only Superadmin can delete admins'], 403);
