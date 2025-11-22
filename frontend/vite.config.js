@@ -55,6 +55,22 @@ export default defineConfig(({ mode }) => {
               }
             },
             {
+              // Cache external images (e.g. Unsplash, other domains)
+              // Note: Opaque responses (CORS missing) will take up significant quota (~7MB per file)
+              urlPattern: ({ request }) => request.destination === 'image',
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'external-images-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7 // 7 Days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
               urlPattern: new RegExp(`^${escapedApiUrl}/api/.*`, 'i'),
               handler: 'NetworkFirst',
               method: 'GET',
