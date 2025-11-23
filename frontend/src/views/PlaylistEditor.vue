@@ -48,7 +48,7 @@ const addToPlaylist = (asset) => {
     url: asset.url,
     filename: asset.filename,
     type: asset.type,
-    duration_seconds: asset.type === 'image' ? 10 : 0, // 0 or ignored for video
+    duration_seconds: asset.type === 'image' ? 5 : 0, // 0 or ignored for video
     transition_effect: 'fade',
     uniqueId: Math.random().toString(36).substr(2, 9)
   })
@@ -169,30 +169,43 @@ onMounted(fetchData)
     </div>
 
     <!-- Right: Asset Library -->
-    <div class="w-1/3 flex flex-col border-l pl-6">
+    <div class="w-1/3 flex flex-col border-l pl-6 h-full">
       <h3 class="text-lg font-semibold mb-4">Available Assets</h3>
-      <div class="overflow-y-auto flex-1 grid grid-cols-2 gap-2 content-start">
-        <div 
-          v-for="asset in availableAssets" 
-          :key="asset.id" 
-          class="relative group cursor-pointer border rounded overflow-hidden hover:ring-2 ring-blue-500"
-          @click="addToPlaylist(asset)"
-        >
-          <div class="aspect-square bg-gray-100">
-            <img 
-              v-if="asset.type === 'image'" 
-              :src="asset.url" 
-              class="w-full h-full object-cover"
-            >
-            <video 
-              v-else 
-              :src="asset.url" 
-              class="w-full h-full object-cover"
-            ></video>
+      <div class="overflow-y-auto flex-1 pr-2">
+        <div class="grid grid-cols-2 gap-3 content-start">
+          <div 
+            v-for="asset in availableAssets" 
+            :key="asset.id" 
+            class="relative group cursor-pointer border rounded-lg overflow-hidden hover:ring-2 ring-blue-500 shadow-sm transition-shadow hover:shadow-md"
+            @click="addToPlaylist(asset)"
+          >
+            <div class="aspect-square bg-gray-100 relative">
+              <img 
+                v-if="asset.type === 'image'" 
+                :src="asset.url" 
+                class="w-full h-full object-cover"
+                loading="lazy"
+              >
+              <div v-else class="w-full h-full relative">
+                <video 
+                  :src="asset.url" 
+                  class="w-full h-full object-cover"
+                ></video>
+                <div class="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 rounded">
+                  VIDEO
+                </div>
+              </div>
+            </div>
+            <div class="p-2 bg-white text-xs truncate border-t">
+              {{ asset.filename }}
+            </div>
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center transition-all">
+              <span class="text-white opacity-0 group-hover:opacity-100 font-bold text-2xl drop-shadow-md">+</span>
+            </div>
           </div>
-          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center transition-all">
-            <span class="text-white opacity-0 group-hover:opacity-100 font-bold text-2xl">+</span>
-          </div>
+        </div>
+        <div v-if="availableAssets.length === 0" class="text-center text-gray-500 mt-10">
+          No assets found. Upload some in the Asset Manager.
         </div>
       </div>
     </div>
