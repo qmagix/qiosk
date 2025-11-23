@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import draggable from 'vuedraggable'
@@ -11,6 +11,7 @@ const playlist = ref(null)
 const availableAssets = ref([])
 const playlistItems = ref([])
 const isSaving = ref(false)
+const playlistContainer = ref(null)
 
 // Fetch playlist and assets
 const fetchData = async () => {
@@ -42,7 +43,7 @@ const fetchData = async () => {
   }
 }
 
-const addToPlaylist = (asset) => {
+const addToPlaylist = async (asset) => {
   playlistItems.value.push({
     asset_id: asset.id,
     url: asset.url,
@@ -52,6 +53,11 @@ const addToPlaylist = (asset) => {
     transition_effect: 'fade',
     uniqueId: Math.random().toString(36).substr(2, 9)
   })
+
+  await nextTick()
+  if (playlistContainer.value) {
+    playlistContainer.value.scrollTop = playlistContainer.value.scrollHeight
+  }
 }
 
 const removeFromPlaylist = (index) => {
@@ -100,7 +106,7 @@ onMounted(fetchData)
         </button>
       </div>
 
-      <div class="bg-gray-50 flex-1 overflow-y-auto p-4 rounded border">
+      <div ref="playlistContainer" class="bg-gray-50 flex-1 overflow-y-auto p-4 rounded border">
         <draggable 
           v-model="playlistItems" 
           item-key="uniqueId"

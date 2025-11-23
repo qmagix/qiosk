@@ -12,7 +12,7 @@
         /* overflow: hidden; Removed to allow scrolling on landing page */
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-BZ9oo5vn.js"></script>
+    <script type="module" crossorigin src="/assets/index-B0eimMq1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-JpEwRaNe.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>
