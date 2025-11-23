@@ -7,7 +7,7 @@ import App from './App.vue'
 import router from './router'
 
 // Configure Axios
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '/')
 
 const app = createApp(App)
 
