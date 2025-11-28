@@ -10,4 +10,6 @@
 - [X] protection for registration (with invitation token)
 - [ ] Electron app?
 - [ ] test on TV
+- [X] playlist orientation
+- [ ] playlist editor orientation
 

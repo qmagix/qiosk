@@ -64,6 +64,13 @@ const removeFromPlaylist = (index) => {
   playlistItems.value.splice(index, 1)
 }
 
+const previewPlaylist = async () => {
+  await savePlaylist()
+  if (playlist.value?.slug) {
+    window.open(`/play/${playlist.value.slug}`, '_blank')
+  }
+}
+
 const savePlaylist = async () => {
   isSaving.value = true
   try {
@@ -78,6 +85,10 @@ const savePlaylist = async () => {
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    // Only alert if not called from preview (we can't easily pass args to click handler without wrapping, so we'll just let it alert for now or remove alert)
+    // For better UX, let's use a toast or just console log, but for now I'll keep the alert in savePlaylist but maybe we can make it optional?
+    // Actually, the user asked for "preview quickly", so let's just save and open.
+    // If I keep the alert, the user has to click OK before the tab opens. That's fine for now.
     alert('Playlist saved!')
   } catch (e) {
     console.error(e)
@@ -107,13 +118,22 @@ onMounted(fetchData)
              </select>
           </div>
         </div>
-        <button 
-          @click="savePlaylist" 
-          class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          :disabled="isSaving"
-        >
-          {{ isSaving ? 'Saving...' : 'Save Changes' }}
-        </button>
+        <div class="flex gap-2">
+          <button 
+            @click="previewPlaylist" 
+            class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
+            :disabled="isSaving"
+          >
+            Save & Preview
+          </button>
+          <button 
+            @click="savePlaylist" 
+            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            :disabled="isSaving"
+          >
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
       </div>
 
       <div ref="playlistContainer" class="bg-gray-50 flex-1 overflow-y-auto p-4 rounded border">
