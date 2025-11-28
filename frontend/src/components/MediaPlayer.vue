@@ -18,6 +18,7 @@ const props = defineProps({
 })
 
 const localPlaylist = ref([])
+const playlistOrientation = ref('landscape')
 const currentIndex = ref(0)
 const isPlaying = ref(false)
 const timer = ref(null)
@@ -27,6 +28,33 @@ const pollInterval = ref(null)
 
 const activePlaylist = computed(() => {
   return props.playlist.length ? props.playlist : localPlaylist.value
+})
+
+// Detect if we need to rotate for portrait mode on a landscape screen
+const shouldRotate = computed(() => {
+  // Only rotate if playlist is portrait but screen is landscape
+  // We use a simple check for window aspect ratio
+  if (typeof window === 'undefined') return false
+  const isScreenLandscape = window.innerWidth > window.innerHeight
+  return playlistOrientation.value === 'portrait' && isScreenLandscape
+})
+
+const containerStyle = computed(() => {
+  if (shouldRotate.value) {
+    return {
+      width: '100vh',
+      height: '100vw',
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center',
+      position: 'absolute',
+      left: 'calc(50% - 50vh)',
+      top: 'calc(50% - 50vw)'
+    }
+  }
+  return {
+    width: '100vw',
+    height: '100vh'
+  }
 })
 
 const currentItem = computed(() => {
@@ -55,6 +83,8 @@ async function fetchPlaylist(isPolling = false) {
   try {
     const response = await axios.get(`/api/playlists/${props.slug}/play`) 
     
+    playlistOrientation.value = response.data.orientation || 'landscape'
+
     const newItems = response.data.items.map(item => ({
       id: item.id,
       type: item.asset.type,
@@ -160,39 +190,41 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="media-player" @dblclick="toggleFullscreen">
-    <Transition :name="transitionName">
-      <div :key="currentItem?.id" class="media-item" v-if="currentItem">
-        
-        <img 
-          v-if="currentItem.type === 'image'" 
-          :src="currentItem.url" 
-          class="media-content"
-          alt="Slide"
-          @error="next"
-        />
-        
-        <video 
-          v-else-if="currentItem.type === 'video'"
-          :src="currentItem.url"
-          class="media-content"
-          autoplay
-          muted
-          playsinline
-          @ended="onVideoEnded"
-          @error="next"
-        ></video>
+  <div class="media-player-container">
+    <div class="media-player" :style="containerStyle" @dblclick="toggleFullscreen">
+      <Transition :name="transitionName">
+        <div :key="currentItem?.id" class="media-item" v-if="currentItem">
+          
+          <img 
+            v-if="currentItem.type === 'image'" 
+            :src="currentItem.url" 
+            class="media-content"
+            alt="Slide"
+            @error="next"
+          />
+          
+          <video 
+            v-else-if="currentItem.type === 'video'"
+            :src="currentItem.url"
+            class="media-content"
+            autoplay
+            muted
+            playsinline
+            @ended="onVideoEnded"
+            @error="next"
+          ></video>
 
-      </div>
-      <div v-else class="empty-state">
-        No media to display
-      </div>
-    </Transition>
+        </div>
+        <div v-else class="empty-state">
+          No media to display
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.media-player {
+.media-player-container {
   position: fixed;
   top: 0;
   left: 0;
@@ -200,10 +232,16 @@ onUnmounted(() => {
   height: 100vh;
   background: black;
   overflow: hidden;
+}
+
+.media-player {
+  /* Removed fixed positioning here as it's handled by containerStyle or parent */
+  background: black;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: none; /* Hide cursor for TV experience */
+  cursor: none;
 }
 
 .media-item {

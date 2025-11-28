@@ -69,6 +69,7 @@ const savePlaylist = async () => {
   try {
     const token = localStorage.getItem('token')
     await axios.put(`/api/playlists/${playlistId}`, {
+      orientation: playlist.value.orientation,
       items: playlistItems.value.map(item => ({
         asset_id: item.asset_id,
         duration_seconds: item.duration_seconds,
@@ -94,9 +95,18 @@ onMounted(fetchData)
     <!-- Left: Playlist Items (Draggable) -->
     <div class="w-2/3 flex flex-col">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold">
-          Editing: {{ playlist?.name }}
-        </h2>
+        <div>
+          <h2 class="text-xl font-bold">
+            Editing: {{ playlist?.name }}
+          </h2>
+          <div class="mt-1 flex items-center gap-2" v-if="playlist">
+             <label class="text-sm text-gray-600">Orientation:</label>
+             <select v-model="playlist.orientation" class="border rounded px-2 py-1 text-sm">
+               <option value="landscape">Landscape</option>
+               <option value="portrait">Portrait</option>
+             </select>
+          </div>
+        </div>
         <button 
           @click="savePlaylist" 
           class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"

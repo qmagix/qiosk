@@ -21,11 +21,15 @@ class PlaylistController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:255']);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'orientation' => 'in:landscape,portrait',
+        ]);
 
         $playlist = $request->user()->playlists()->create([
             'name' => $request->name,
             'slug' => Str::slug($request->name) . '-' . Str::random(6),
+            'orientation' => $request->orientation ?? 'landscape',
         ]);
 
         return response()->json($playlist, 201);
@@ -49,6 +53,7 @@ class PlaylistController extends Controller
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
+            'orientation' => 'sometimes|in:landscape,portrait',
             'items' => 'sometimes|array',
             'items.*.asset_id' => 'required|exists:assets,id',
             'items.*.duration_seconds' => 'integer|min:0',
@@ -57,6 +62,10 @@ class PlaylistController extends Controller
 
         if ($request->has('name')) {
             $playlist->update(['name' => $request->name]);
+        }
+
+        if ($request->has('orientation')) {
+            $playlist->update(['orientation' => $request->orientation]);
         }
 
         if ($request->has('items')) {

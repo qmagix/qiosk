@@ -4,6 +4,7 @@ import axios from 'axios'
 
 const playlists = ref([])
 const newPlaylistName = ref('')
+const newPlaylistOrientation = ref('landscape')
 const showCreateModal = ref(false)
 
 const fetchPlaylists = async () => {
@@ -21,11 +22,13 @@ const createPlaylist = async () => {
   if (!newPlaylistName.value) return
   try {
     await axios.post('/api/playlists', {
-      name: newPlaylistName.value
+      name: newPlaylistName.value,
+      orientation: newPlaylistOrientation.value
     }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
     newPlaylistName.value = ''
+    newPlaylistOrientation.value = 'landscape'
     showCreateModal.value = false
     await fetchPlaylists()
   } catch (e) {
@@ -69,6 +72,10 @@ onMounted(fetchPlaylists)
               <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                 {{ playlist.items_count || 0 }} items
               </span>
+              <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                :class="playlist.orientation === 'portrait' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'">
+                {{ playlist.orientation || 'landscape' }}
+              </span>
             </div>
             <div class="flex space-x-2">
               <router-link 
@@ -93,11 +100,21 @@ onMounted(fetchPlaylists)
     <div v-if="showCreateModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
       <div class="bg-white p-6 rounded-lg shadow-xl w-96">
         <h3 class="text-lg font-medium mb-4">Create Playlist</h3>
-        <input 
-          v-model="newPlaylistName" 
-          class="border w-full p-2 rounded mb-4" 
-          placeholder="Playlist Name"
-        >
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <input 
+            v-model="newPlaylistName" 
+            class="border w-full p-2 rounded" 
+            placeholder="Playlist Name"
+          >
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Orientation</label>
+          <select v-model="newPlaylistOrientation" class="border w-full p-2 rounded">
+            <option value="landscape">Landscape (Horizontal)</option>
+            <option value="portrait">Portrait (Vertical)</option>
+          </select>
+        </div>
         <div class="flex justify-end space-x-2">
           <button @click="showCreateModal = false" class="text-gray-500">Cancel</button>
           <button @click="createPlaylist" class="bg-blue-500 text-white px-4 py-2 rounded">Create</button>

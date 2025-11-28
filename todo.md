@@ -9,4 +9,5 @@
 - [ ] video for landing page
 - [X] protection for registration (with invitation token)
 - [ ] Electron app?
+- [ ] test on TV
 

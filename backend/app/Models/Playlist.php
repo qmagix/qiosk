@@ -10,6 +10,7 @@ class Playlist extends Model
         'user_id',
         'name',
         'slug',
+        'orientation',
     ];
 
     public function user()
