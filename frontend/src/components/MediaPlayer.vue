@@ -113,6 +113,82 @@ async function fetchPlaylist(isPolling = false) {
   }
 }
 
+function start() {
+  if (!activePlaylist.value.length) return
+  isPlaying.value = true
+  scheduleNext()
+}
+
+function stop() {
+  isPlaying.value = false
+  if (timer.value) clearTimeout(timer.value)
+  if (pollInterval.value) clearInterval(pollInterval.value)
+}
+
+function next() {
+  currentIndex.value = nextIndex.value
+  scheduleNext()
+}
+
+function scheduleNext() {
+  if (!isPlaying.value) return
+  if (timer.value) clearTimeout(timer.value)
+
+  const item = currentItem.value
+  if (!item) return
+
+  if (item.type === 'image') {
+    // Default 10s or use item duration
+    const duration = (item.duration_seconds || 10) * 1000
+    timer.value = setTimeout(() => {
+      next()
+    }, duration)
+  } else if (item.type === 'video') {
+    // Video handles its own transition via 'ended' event
+    // But we set a fallback just in case
+  }
+}
+
+function onVideoEnded() {
+  if (currentItem.value?.type === 'video') {
+    next()
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(e => {
+      console.log(`Error attempting to enable fullscreen: ${e.message}`)
+    })
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    }
+  }
+}
+
+// Preload next image
+watch(nextItem, (newItem) => {
+  if (newItem && newItem.type === 'image') {
+    const img = new Image()
+    img.src = newItem.url
+  }
+})
+
+onMounted(() => {
+  if (props.slug) {
+    fetchPlaylist()
+    // Poll every 30 seconds for updates
+    pollInterval.value = setInterval(() => fetchPlaylist(true), 30000)
+  } else if (props.playlist.length && props.autoPlay) {
+    start()
+  }
+})
+
+onUnmounted(() => {
+  stop()
+})
+
 function getMediaStyle(item) {
   if (!item.crop_data) {
     return { objectFit: 'contain' } 
@@ -208,7 +284,6 @@ function getMediaStyle(item) {
 </template>
 
 <style scoped>
-/* ... existing styles ... */
 .crop-wrapper {
   width: 100%;
   height: 100%;
@@ -221,9 +296,7 @@ function getMediaStyle(item) {
   max-width: none;
   max-height: none;
 }
-/* ... */
 
-<style scoped>
 .media-player-container {
   position: fixed;
   top: 0;
