@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import Cropper from 'cropperjs'
+import Cropper from 'cropperjs/dist/cropper.esm.js'
 import 'cropperjs/dist/cropper.css'
 
 const props = defineProps({
@@ -24,6 +24,7 @@ const imageRef = ref(null)
 let cropper = null
 
 onMounted(() => {
+  console.log('Initializing Cropper on:', imageRef.value)
   cropper = new Cropper(imageRef.value, {
     aspectRatio: props.aspectRatio,
     viewMode: 1, // Restrict crop box to canvas
@@ -36,12 +37,15 @@ onMounted(() => {
     cropBoxMovable: true,
     cropBoxResizable: true,
     toggleDragModeOnDblclick: false,
+    checkCrossOrigin: false, // Disable CORS check to avoid reloading image with Origin header
     ready() {
+      console.log('Cropper ready')
       if (props.initialData) {
         cropper.setData(props.initialData)
       }
     }
   })
+  console.log('Cropper instance created:', cropper)
 })
 
 onUnmounted(() => {
@@ -51,7 +55,13 @@ onUnmounted(() => {
 })
 
 const save = () => {
+  console.log('Save called. Cropper instance:', cropper)
   if (cropper) {
+    if (typeof cropper.getData !== 'function') {
+      console.error('cropper.getData is not a function!', cropper)
+      alert('Internal Error: Cropper not initialized correctly.')
+      return
+    }
     const data = cropper.getData()
     const imageData = cropper.getImageData()
     
