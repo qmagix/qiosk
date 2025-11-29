@@ -3,6 +3,7 @@ import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import draggable from 'vuedraggable'
+import ImageCropperModal from '../components/ImageCropperModal.vue'
 
 const route = useRoute()
 const playlistId = route.params.id
@@ -12,6 +13,12 @@ const availableAssets = ref([])
 const playlistItems = ref([])
 const isSaving = ref(false)
 const playlistContainer = ref(null)
+
+// Cropper State
+const showCropper = ref(false)
+const croppingItemIndex = ref(null)
+const currentCropImage = ref('')
+const currentCropData = ref(null)
 
 // Computed properties for visual feedback
 const orientation = computed(() => playlist.value?.orientation || 'landscape')
@@ -26,6 +33,10 @@ const libraryAspectClass = computed(() => {
   return orientation.value === 'portrait'
     ? 'aspect-[9/16]'
     : 'aspect-video'
+})
+
+const targetAspectRatio = computed(() => {
+  return orientation.value === 'portrait' ? 9 / 16 : 16 / 9
 })
 
 // Fetch playlist and assets
@@ -48,6 +59,7 @@ const fetchData = async () => {
       type: item.asset.type,
       duration_seconds: item.duration_seconds,
       transition_effect: item.transition_effect,
+      crop_data: item.crop_data,
       uniqueId: Math.random().toString(36).substr(2, 9) // for drag key
     }))
 
@@ -66,6 +78,7 @@ const addToPlaylist = async (asset) => {
     type: asset.type,
     duration_seconds: asset.type === 'image' ? 5 : 0, // 0 or ignored for video
     transition_effect: 'fade',
+    crop_data: null,
     uniqueId: Math.random().toString(36).substr(2, 9)
   })
 
@@ -77,6 +90,24 @@ const addToPlaylist = async (asset) => {
 
 const removeFromPlaylist = (index) => {
   playlistItems.value.splice(index, 1)
+}
+
+const openCropper = (index) => {
+  const item = playlistItems.value[index]
+  if (item.type !== 'image') return
+  
+  croppingItemIndex.value = index
+  currentCropImage.value = item.url
+  currentCropData.value = item.crop_data
+  showCropper.value = true
+}
+
+const saveCrop = (data) => {
+  if (croppingItemIndex.value !== null) {
+    playlistItems.value[croppingItemIndex.value].crop_data = data
+  }
+  showCropper.value = false
+  croppingItemIndex.value = null
 }
 
 const previewPlaylist = async () => {
@@ -95,15 +126,12 @@ const savePlaylist = async () => {
       items: playlistItems.value.map(item => ({
         asset_id: item.asset_id,
         duration_seconds: item.duration_seconds,
-        transition_effect: item.transition_effect
+        transition_effect: item.transition_effect,
+        crop_data: item.crop_data
       }))
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    // Only alert if not called from preview (we can't easily pass args to click handler without wrapping, so we'll just let it alert for now or remove alert)
-    // For better UX, let's use a toast or just console log, but for now I'll keep the alert in savePlaylist but maybe we can make it optional?
-    // Actually, the user asked for "preview quickly", so let's just save and open.
-    // If I keep the alert, the user has to click OK before the tab opens. That's fine for now.
     alert('Playlist saved!')
   } catch (e) {
     console.error(e)
@@ -111,6 +139,35 @@ const savePlaylist = async () => {
   } finally {
     isSaving.value = false
   }
+}
+
+// Helper to generate style for cropped thumbnail
+const getThumbnailStyle = (item) => {
+  if (!item.crop_data) return {}
+  
+  // If we have crop data, we want to zoom in to show the cropped area.
+  // This is tricky with simple CSS 'object-fit'.
+  // We can use object-position and scale, but it depends on the container size.
+  // A simpler way for the thumbnail is to just let it be 'cover' (center crop) 
+  // OR try to approximate.
+  // But for WYSIWYG, we really want to see the crop.
+  // Let's try using a background image approach for the thumbnail if cropped.
+  
+  // Actually, let's just stick to object-cover for the thumbnail for now unless we want to implement complex CSS math here.
+  // The user asked for "save the crop parameters... when showing/playing".
+  // They also said "The landscape pictures are cropped to 9:16 in the assets area... Some looks really good...".
+  // So the default 'cover' behavior is what they liked in the asset view.
+  // But they want to CUSTOMIZE it.
+  
+  // If we want to show the CUSTOM crop in the thumbnail:
+  // We can use `transform` on the img tag.
+  // crop_data has { x, y, width, height } (all relative to natural image dimensions if we used cropper correctly).
+  // But wait, cropper.getData() returns absolute pixels.
+  // We need to know the natural dimensions to calculate percentages.
+  // This is hard to do synchronously in a v-for without loading the image.
+  
+  // For now, let's just add a "Cropped" badge to the thumbnail so they know it's custom.
+  return {}
 }
 
 onMounted(fetchData)
@@ -167,7 +224,7 @@ onMounted(fetchData)
                 ☰
               </div>
               
-              <div :class="['bg-gray-100 flex-shrink-0 transition-all duration-300', thumbnailClass]">
+              <div :class="['bg-gray-100 flex-shrink-0 transition-all duration-300 relative overflow-hidden', thumbnailClass]">
                 <img 
                   v-if="element.type === 'image'" 
                   :src="element.url" 
@@ -178,6 +235,11 @@ onMounted(fetchData)
                   :src="element.url" 
                   class="w-full h-full object-cover"
                 ></video>
+                
+                <!-- Crop Badge -->
+                <div v-if="element.crop_data" class="absolute bottom-0 right-0 bg-green-500 text-white text-[10px] px-1">
+                  CROP
+                </div>
               </div>
 
               <div class="flex-1 min-w-0">
@@ -188,7 +250,15 @@ onMounted(fetchData)
               <!-- Settings -->
               <div class="flex flex-col gap-2 items-end mr-4">
                 <div class="flex items-center gap-2" v-if="element.type === 'image'">
-                  <label class="text-xs text-gray-600">Duration:</label>
+                  <button 
+                    @click="openCropper(index)"
+                    class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded flex items-center gap-1"
+                  >
+                    <span v-if="element.crop_data">Edit Crop</span>
+                    <span v-else>Crop</span>
+                  </button>
+                  
+                  <label class="text-xs text-gray-600 ml-2">Duration:</label>
                   <input 
                     type="number" 
                     v-model.number="element.duration_seconds" 
@@ -263,5 +333,15 @@ onMounted(fetchData)
         </div>
       </div>
     </div>
+
+    <!-- Cropper Modal -->
+    <ImageCropperModal
+      v-if="showCropper"
+      :image-url="currentCropImage"
+      :aspect-ratio="targetAspectRatio"
+      :initial-data="currentCropData"
+      @save="saveCrop"
+      @cancel="showCropper = false"
+    />
   </div>
 </template>

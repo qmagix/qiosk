@@ -58,6 +58,7 @@ class PlaylistController extends Controller
             'items.*.asset_id' => 'required|exists:assets,id',
             'items.*.duration_seconds' => 'integer|min:0',
             'items.*.transition_effect' => 'string',
+            'items.*.crop_data' => 'nullable|array',
         ]);
 
         if ($request->has('name')) {
@@ -78,6 +79,7 @@ class PlaylistController extends Controller
                     'display_order' => $index,
                     'duration_seconds' => $itemData['duration_seconds'] ?? 10,
                     'transition_effect' => $itemData['transition_effect'] ?? 'fade',
+                    'crop_data' => $itemData['crop_data'] ?? null,
                 ]);
             }
         }
@@ -100,9 +102,11 @@ class PlaylistController extends Controller
      */
     public function play(string $slug)
     {
-        $playlist = Playlist::where('slug', $slug)->with(['items' => function($query) {
-            $query->orderBy('display_order')->with('asset');
-        }])->firstOrFail();
+        $playlist = Playlist::where('slug', $slug)->with([
+            'items' => function ($query) {
+                $query->orderBy('display_order')->with('asset');
+            }
+        ])->firstOrFail();
 
         return response()->json($playlist);
     }

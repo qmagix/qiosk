@@ -12,6 +12,11 @@ class PlaylistItem extends Model
         'display_order',
         'duration_seconds',
         'transition_effect',
+        'crop_data',
+    ];
+
+    protected $casts = [
+        'crop_data' => 'array',
     ];
 
     public function playlist()

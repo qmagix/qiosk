@@ -90,7 +90,8 @@ async function fetchPlaylist(isPolling = false) {
       type: item.asset.type,
       url: item.asset.url,
       duration_seconds: item.duration_seconds,
-      transition_effect: item.transition_effect
+      transition_effect: item.transition_effect,
+      crop_data: item.crop_data
     }))
 
     // Only update if content changed to avoid resetting the player unnecessarily
@@ -112,81 +113,54 @@ async function fetchPlaylist(isPolling = false) {
   }
 }
 
-function start() {
-  if (!activePlaylist.value.length) return
-  isPlaying.value = true
-  scheduleNext()
-}
-
-function stop() {
-  isPlaying.value = false
-  if (timer.value) clearTimeout(timer.value)
-  if (pollInterval.value) clearInterval(pollInterval.value)
-}
-
-function next() {
-  currentIndex.value = nextIndex.value
-  scheduleNext()
-}
-
-function scheduleNext() {
-  if (!isPlaying.value) return
-  if (timer.value) clearTimeout(timer.value)
-
-  const item = currentItem.value
-  if (!item) return
-
-  if (item.type === 'image') {
-    // Default 10s or use item duration
-    const duration = (item.duration_seconds || 10) * 1000
-    timer.value = setTimeout(() => {
-      next()
-    }, duration)
-  } else if (item.type === 'video') {
-    // Video handles its own transition via 'ended' event
-    // But we set a fallback just in case
+function getMediaStyle(item) {
+  if (!item.crop_data) {
+    return { objectFit: 'contain' } 
+  }
+  
+  const crop = item.crop_data
+  
+  // Logic:
+  // We have a container (100% w, 100% h).
+  // We want the CROP BOX to fill this container.
+  // The image is larger than the crop box.
+  // 
+  // If crop.width is 50% of image, then the image needs to be 200% of the container width.
+  // Scale = 100 / crop.width
+  //
+  // Position:
+  // If crop.x is 10%, we need to shift the image left by 10% of its OWN width.
+  // But wait, standard CSS 'left' percentage is relative to PARENT width.
+  // So we can't use 'left: -10%'.
+  //
+  // Let's use width/height and top/left.
+  // width = (100 / crop.width) * 100 %
+  // height = (100 / crop.height) * 100 %
+  // left = - (crop.x / crop.width) * 100 %  <-- relative to container width?
+  // Let's trace:
+  // Image Width = Container Width * (100/crop.width)
+  // We want the point at crop.x (which is crop.x% of Image Width) to be at 0.
+  // So we shift left by: Image Width * (crop.x/100).
+  // In percentages of Container Width:
+  // Shift = (Container Width * 100/crop.width) * (crop.x/100)
+  //       = Container Width * (crop.x / crop.width)
+  // So left = - (crop.x / crop.width) * 100 %
+  
+  return {
+    width: `${(100 / crop.width) * 100}%`,
+    height: `${(100 / crop.height) * 100}%`,
+    left: `${-(crop.x / crop.width) * 100}%`,
+    top: `${-(crop.y / crop.height) * 100}%`,
+    position: 'absolute'
   }
 }
 
-function onVideoEnded() {
-  if (currentItem.value?.type === 'video') {
-    next()
-  }
-}
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(e => {
-      console.log(`Error attempting to enable fullscreen: ${e.message}`)
-    })
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen()
-    }
-  }
-}
-
-// Preload next image
-watch(nextItem, (newItem) => {
-  if (newItem && newItem.type === 'image') {
-    const img = new Image()
-    img.src = newItem.url
-  }
-})
-
-onMounted(() => {
-  if (props.slug) {
-    fetchPlaylist()
-    // Poll every 30 seconds for updates
-    pollInterval.value = setInterval(() => fetchPlaylist(true), 30000)
-  } else if (props.playlist.length && props.autoPlay) {
-    start()
-  }
-})
-
-onUnmounted(() => {
-  stop()
-})
+// We need to update the template to call getMediaStyle, but first let's handle the data format issue.
+// I will update ImageCropperModal to return percentages.
+// Then I can use:
+// width: (100 / cropWidthPercent) * 100 %
+// left: - (cropXPercent / cropWidthPercent) * 100 %
+// This works!
 </script>
 
 <template>
@@ -195,8 +169,18 @@ onUnmounted(() => {
       <Transition :name="transitionName">
         <div :key="currentItem?.id" class="media-item" v-if="currentItem">
           
+          <!-- We use a wrapper for cropping if needed -->
+          <div v-if="currentItem.type === 'image' && currentItem.crop_data" class="crop-wrapper">
+             <img 
+              :src="currentItem.url" 
+              class="media-content-cropped"
+              alt="Slide"
+              :style="getMediaStyle(currentItem)"
+              @error="next"
+            />
+          </div>
           <img 
-            v-if="currentItem.type === 'image'" 
+            v-else-if="currentItem.type === 'image'" 
             :src="currentItem.url" 
             class="media-content"
             alt="Slide"
@@ -222,6 +206,22 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* ... existing styles ... */
+.crop-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.media-content-cropped {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+}
+/* ... */
 
 <style scoped>
 .media-player-container {
