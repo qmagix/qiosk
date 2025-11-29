@@ -51,6 +51,6 @@ cp -r frontend/dist/* backend/public/
 mkdir -p backend/resources/views
 cp frontend/dist/index.html backend/resources/views/spa.blade.php
 rm backend/public/index.html
-php artisan view:clear
+php backend/artisan view:clear
 
 echo "✅ Deployment Complete!"

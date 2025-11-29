@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import draggable from 'vuedraggable'
@@ -12,6 +12,21 @@ const availableAssets = ref([])
 const playlistItems = ref([])
 const isSaving = ref(false)
 const playlistContainer = ref(null)
+
+// Computed properties for visual feedback
+const orientation = computed(() => playlist.value?.orientation || 'landscape')
+
+const thumbnailClass = computed(() => {
+  return orientation.value === 'portrait' 
+    ? 'w-9 h-16' 
+    : 'w-28 h-16'
+})
+
+const libraryAspectClass = computed(() => {
+  return orientation.value === 'portrait'
+    ? 'aspect-[9/16]'
+    : 'aspect-video'
+})
 
 // Fetch playlist and assets
 const fetchData = async () => {
@@ -116,6 +131,9 @@ onMounted(fetchData)
                <option value="landscape">Landscape</option>
                <option value="portrait">Portrait</option>
              </select>
+             <span class="text-xs text-gray-500 ml-2">
+               (Ensure assets match this aspect ratio)
+             </span>
           </div>
         </div>
         <div class="flex gap-2">
@@ -149,7 +167,7 @@ onMounted(fetchData)
                 ☰
               </div>
               
-              <div class="w-16 h-16 bg-gray-100 flex-shrink-0">
+              <div :class="['bg-gray-100 flex-shrink-0 transition-all duration-300', thumbnailClass]">
                 <img 
                   v-if="element.type === 'image'" 
                   :src="element.url" 
@@ -215,7 +233,7 @@ onMounted(fetchData)
             class="relative group cursor-pointer border rounded-lg overflow-hidden hover:ring-2 ring-blue-500 shadow-sm transition-shadow hover:shadow-md"
             @click="addToPlaylist(asset)"
           >
-            <div class="aspect-square bg-gray-100 relative">
+            <div :class="['bg-gray-100 relative transition-all duration-300', libraryAspectClass]">
               <img 
                 v-if="asset.type === 'image'" 
                 :src="asset.url" 
