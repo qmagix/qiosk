@@ -8,8 +8,10 @@
 - [X] landing page
 - [ ] video for landing page
 - [X] protection for registration (with invitation token)
-- [ ] Electron app?
+- [X] Electron app
+    - [X] Basic setup in `electron/` folder
+    - [X] Offline caching implementation
 - [ ] test on TV
 - [X] playlist orientation
-- [ ] playlist editor orientation
-
+- [X] playlist editor orientation and preview features
+- [X] playlist editor picture cropping/zooming?

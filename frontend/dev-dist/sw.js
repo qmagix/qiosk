@@ -82,13 +82,13 @@ define(['./workbox-36e57b92'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.m9v64d06fbo"
+    "revision": "0.nkm15sqk9k8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^http:\/\/localhost:8000\/storage\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i, new workbox.CacheFirst({
+  workbox.registerRoute(/^https:\/\/www\.eyepub\.com\/storage\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i, new workbox.CacheFirst({
     "cacheName": "media-images-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 100,
@@ -108,7 +108,7 @@ define(['./workbox-36e57b92'], (function (workbox) { 'use strict';
       statuses: [0, 200]
     })]
   }), 'GET');
-  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/.*/i, new workbox.NetworkFirst({
+  workbox.registerRoute(/^https:\/\/www\.eyepub\.com\/api\/.*/i, new workbox.NetworkFirst({
     "cacheName": "api-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 50,

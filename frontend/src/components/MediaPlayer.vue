@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
+import { offlineManager } from '../services/OfflineManager'
 
 const props = defineProps({
   playlist: {
@@ -91,22 +92,55 @@ async function fetchPlaylist(isPolling = false) {
       url: item.asset.url,
       duration_seconds: item.duration_seconds,
       transition_effect: item.transition_effect,
-      crop_data: item.crop_data
+      crop_data: item.crop_data,
+      asset: item.asset // Keep original asset data for syncing
     }))
 
+    let finalPlaylist = { ...response.data, items: newItems };
+
+    // Sync for offline if in Electron
+    if (offlineManager.isElectron()) {
+       finalPlaylist = await offlineManager.syncPlaylist(finalPlaylist);
+       // Update URLs to use local paths
+       finalPlaylist.items = finalPlaylist.items.map(item => ({
+         ...item,
+         url: item.localPath || item.url
+       }));
+       
+       // Save the fully synced playlist (with local paths) for offline use
+       await offlineManager.savePlaylist(props.slug, finalPlaylist);
+    }
+
     // Only update if content changed to avoid resetting the player unnecessarily
-    if (JSON.stringify(newItems) !== JSON.stringify(localPlaylist.value)) {
-      localPlaylist.value = newItems
+    // Note: We might need a better comparison if local paths change but content is same.
+    // For now, simple JSON stringify might be enough if order is stable.
+    if (JSON.stringify(finalPlaylist.items) !== JSON.stringify(localPlaylist.value)) {
+      localPlaylist.value = finalPlaylist.items
       // If we were empty and now have items, start playing
-      if (!isPlaying.value && props.autoPlay && newItems.length > 0) {
+      if (!isPlaying.value && props.autoPlay && finalPlaylist.items.length > 0) {
         start()
       }
     }
     
   } catch (e) {
+    console.error('Failed to load playlist from API:', e)
+    
+    // Try to load from offline storage if in Electron
+    if (offlineManager.isElectron()) {
+       console.log('Attempting to load offline playlist...');
+       const offlinePlaylist = await offlineManager.loadPlaylist(props.slug);
+       if (offlinePlaylist) {
+          playlistOrientation.value = offlinePlaylist.orientation || 'landscape';
+          localPlaylist.value = offlinePlaylist.items;
+          if (!isPlaying.value && props.autoPlay && offlinePlaylist.items.length > 0) {
+            start();
+          }
+          return; // Successfully loaded offline
+       }
+    }
+
     if (!isPolling) {
       error.value = 'Failed to load playlist'
-      console.error(e)
     }
   } finally {
     if (!isPolling) isLoading.value = false

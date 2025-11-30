@@ -1,0 +1,51 @@
+{
+  "name": "electron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "prebuild": "rm -rf renderer && mkdir -p renderer && cp -R ../frontend/dist/* renderer/",
+    "dist": "npm run prebuild && electron-builder",
+    "dist:mac": "npm run prebuild && electron-builder --mac",
+    "dist:win": "npm run prebuild && electron-builder --win",
+    "dist:linux": "npm run prebuild && electron-builder --linux",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.eyepub.player",
+    "productName": "EyePub Player",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  },
+  "keywords": [],
+  "author": "EyePub",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^39.2.4",
+    "electron-builder": "^25.1.8"
+  }
+}
