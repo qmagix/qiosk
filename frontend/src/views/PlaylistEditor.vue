@@ -112,8 +112,10 @@ const saveCrop = (data) => {
 
 const previewPlaylist = async () => {
   await savePlaylist()
-  if (playlist.value?.slug) {
-    window.open(`/play/${playlist.value.slug}`, '_blank')
+  // Use the new URL format that works for both public and private playlists
+  const url = getPlaylistUrl()
+  if (url) {
+    window.open(url, '_blank')
   }
 }
 
