@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { offlineManager } from '../services/OfflineManager'
 
@@ -17,6 +18,9 @@ const props = defineProps({
     default: true
   }
 })
+
+// Call useRoute at the top level
+const route = useRoute()
 
 const localPlaylist = ref([])
 const playlistOrientation = ref('landscape')
@@ -78,11 +82,28 @@ const transitionName = computed(() => {
 })
 
 async function fetchPlaylist(isPolling = false) {
-  if (!props.slug) return
+  if (!props.slug && !route.params.id) return
   if (!isPolling) isLoading.value = true
   
+  const id = route.params.id
+  const token = route.params.token
+  
   try {
-    const response = await axios.get(`/api/playlists/${props.slug}/play`) 
+    let response
+    if (id) {
+       // Play by ID (and optional token)
+       let url = `/api/playlists/${id}/play-by-id`
+       if (token) {
+         url += `?token=${token}`
+       }
+       response = await axios.get(url)
+    } else if (props.slug) {
+       // Legacy play by slug
+       response = await axios.get(`/api/playlists/${props.slug}/play`) 
+    } else {
+      // No ID or Slug provided
+      return
+    }
     
     playlistOrientation.value = response.data.orientation || 'landscape'
 
@@ -108,16 +129,17 @@ async function fetchPlaylist(isPolling = false) {
        }));
        
        // Save the fully synced playlist (with local paths) for offline use
-       await offlineManager.savePlaylist(props.slug, finalPlaylist);
+       // Use ID as key if available, else slug
+       const key = id ? `id_${id}` : props.slug
+       await offlineManager.savePlaylist(key, finalPlaylist);
     }
 
     // Only update if content changed to avoid resetting the player unnecessarily
-    // Note: We might need a better comparison if local paths change but content is same.
-    // For now, simple JSON stringify might be enough if order is stable.
     if (JSON.stringify(finalPlaylist.items) !== JSON.stringify(localPlaylist.value)) {
       localPlaylist.value = finalPlaylist.items
-      // If we were empty and now have items, start playing
-      if (!isPlaying.value && props.autoPlay && finalPlaylist.items.length > 0) {
+      
+      // If we have items and aren't playing, start
+      if (!isPlaying.value && props.autoPlay && localPlaylist.value.length > 0) {
         start()
       }
     }
@@ -128,7 +150,9 @@ async function fetchPlaylist(isPolling = false) {
     // Try to load from offline storage if in Electron
     if (offlineManager.isElectron()) {
        console.log('Attempting to load offline playlist...');
-       const offlinePlaylist = await offlineManager.loadPlaylist(props.slug);
+       const id = route.params.id
+       const key = id ? `id_${id}` : props.slug
+       const offlinePlaylist = await offlineManager.loadPlaylist(key);
        if (offlinePlaylist) {
           playlistOrientation.value = offlinePlaylist.orientation || 'landscape';
           localPlaylist.value = offlinePlaylist.items;
@@ -210,7 +234,9 @@ watch(nextItem, (newItem) => {
 })
 
 onMounted(() => {
-  if (props.slug) {
+  const hasIdParam = route.params.id
+  
+  if (props.slug || hasIdParam) {
     fetchPlaylist()
     // Poll every 30 seconds for updates
     pollInterval.value = setInterval(() => fetchPlaylist(true), 30000)

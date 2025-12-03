@@ -26,6 +26,12 @@ const router = createRouter({
       props: true
     },
     {
+      path: '/p/:id/:token?',
+      name: 'player-by-id',
+      component: MediaPlayer,
+      props: true
+    },
+    {
       path: '/login',
       name: 'login',
       component: LoginView

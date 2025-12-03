@@ -15,3 +15,4 @@
 - [X] playlist orientation
 - [X] playlist editor orientation and preview features
 - [X] playlist editor picture cropping/zooming?
+- [X] all displays are supposed for public player, so unobscured url should be fine, add url /p/{id} for displaying playlist with id {id}, or even better for each playlist provide a public/private choice and then for public playlist provide a url /p/{id} and for private playlist provide a url /p/{id}/{token}

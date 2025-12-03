@@ -30,7 +30,7 @@ Route::post('/register', function (Request $request) {
             ->where('is_used', false)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             })
             ->first();
 
@@ -97,6 +97,7 @@ Route::post('/login', function (Request $request) {
 });
 
 Route::get('/playlists/{slug}/play', [PlaylistController::class, 'play']);
+Route::get('/playlists/{id}/play-by-id', [PlaylistController::class, 'playById']);
 
 use App\Http\Controllers\InvitationCodeController;
 

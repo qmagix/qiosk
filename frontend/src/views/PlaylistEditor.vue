@@ -121,8 +121,9 @@ const savePlaylist = async () => {
   isSaving.value = true
   try {
     const token = localStorage.getItem('token')
-    await axios.put(`/api/playlists/${playlistId}`, {
+    const response = await axios.put(`/api/playlists/${playlistId}`, {
       orientation: playlist.value.orientation,
+      visibility: playlist.value.visibility,
       items: playlistItems.value.map(item => ({
         asset_id: item.asset_id,
         duration_seconds: item.duration_seconds,
@@ -132,12 +133,38 @@ const savePlaylist = async () => {
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    
+    // Update local playlist data (especially for access_token if it changed)
+    playlist.value = response.data
+    
     alert('Playlist saved!')
   } catch (e) {
     console.error(e)
     alert('Failed to save')
   } finally {
     isSaving.value = false
+  }
+}
+
+const getPlaylistUrl = () => {
+  if (!playlist.value) return ''
+  const baseUrl = window.location.origin
+  // Use ID-based URL as requested
+  let url = `${baseUrl}/p/${playlist.value.id}`
+  
+  if (playlist.value.visibility === 'private' && playlist.value.access_token) {
+    url += `/${playlist.value.access_token}`
+  }
+  
+  return url
+}
+
+const copyUrl = () => {
+  const url = getPlaylistUrl()
+  if (url) {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('URL copied to clipboard!')
+    })
   }
 }
 
@@ -182,15 +209,30 @@ onMounted(fetchData)
           <h2 class="text-xl font-bold">
             Editing: {{ playlist?.name }}
           </h2>
-          <div class="mt-1 flex items-center gap-2" v-if="playlist">
-             <label class="text-sm text-gray-600">Orientation:</label>
-             <select v-model="playlist.orientation" class="border rounded px-2 py-1 text-sm">
-               <option value="landscape">Landscape</option>
-               <option value="portrait">Portrait</option>
-             </select>
-             <span class="text-xs text-gray-500 ml-2">
-               (Ensure assets match this aspect ratio)
-             </span>
+          <div class="mt-1 flex flex-wrap items-center gap-4" v-if="playlist">
+             <div class="flex items-center gap-2">
+               <label class="text-sm text-gray-600">Orientation:</label>
+               <select v-model="playlist.orientation" class="border rounded px-2 py-1 text-sm">
+                 <option value="landscape">Landscape</option>
+                 <option value="portrait">Portrait</option>
+               </select>
+             </div>
+
+             <div class="flex items-center gap-2">
+               <label class="text-sm text-gray-600">Visibility:</label>
+               <select v-model="playlist.visibility" class="border rounded px-2 py-1 text-sm">
+                 <option value="public">Public</option>
+                 <option value="private">Private</option>
+               </select>
+             </div>
+
+             <div class="flex items-center gap-2 text-sm">
+                <span class="text-gray-600">URL:</span>
+                <div class="flex items-center bg-gray-100 rounded px-2 py-1">
+                  <span class="truncate max-w-[200px] text-gray-800 select-all">{{ getPlaylistUrl() }}</span>
+                  <button @click="copyUrl" class="ml-2 text-blue-600 hover:text-blue-800 text-xs font-bold">COPY</button>
+                </div>
+             </div>
           </div>
         </div>
         <div class="flex gap-2">
