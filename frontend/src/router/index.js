@@ -10,6 +10,7 @@ import UserManager from '../views/UserManager.vue'
 import InvitationManager from '../views/InvitationManager.vue'
 import DashboardView from '../views/DashboardView.vue'
 import LandingPage from '../views/LandingPage.vue'
+import GuestUploadView from '../views/GuestUploadView.vue'
 
 const router = createRouter({
   history: window.electronAPI ? createWebHashHistory() : createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,12 @@ const router = createRouter({
       path: '/p/:id/:token?',
       name: 'player-by-id',
       component: MediaPlayer,
+      props: true
+    },
+    {
+      path: '/upload/:id/:token',
+      name: 'guest-upload',
+      component: GuestUploadView,
       props: true
     },
     {

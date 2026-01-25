@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('playlists', function (Blueprint $table) {
-            $table->enum('visibility', ['public', 'private'])->default('private')->after('orientation');
-            $table->string('access_token')->nullable()->after('visibility');
+            $table->boolean('allow_uploads')->default(false)->after('access_token');
+            $table->string('upload_token', 32)->nullable()->unique()->after('allow_uploads');
+            $table->enum('upload_mode', ['auto_add', 'require_approval'])->default('auto_add')->after('upload_token');
+            $table->unsignedInteger('qr_frequency')->default(5)->after('upload_mode');
         });
     }
 
@@ -23,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('playlists', function (Blueprint $table) {
-            $table->dropColumn(['visibility', 'access_token']);
+            $table->dropColumn(['allow_uploads', 'upload_token', 'upload_mode', 'qr_frequency']);
         });
     }
 };

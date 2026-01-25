@@ -13,6 +13,15 @@ class Playlist extends Model
         'orientation',
         'visibility',
         'access_token',
+        'allow_uploads',
+        'upload_token',
+        'upload_mode',
+        'qr_frequency',
+    ];
+
+    protected $casts = [
+        'allow_uploads' => 'boolean',
+        'qr_frequency' => 'integer',
     ];
 
     public function user()
@@ -23,5 +32,10 @@ class Playlist extends Model
     public function items()
     {
         return $this->hasMany(PlaylistItem::class)->orderBy('display_order');
+    }
+
+    public function pendingUploads()
+    {
+        return $this->hasMany(PendingUpload::class)->where('status', 'pending');
     }
 }

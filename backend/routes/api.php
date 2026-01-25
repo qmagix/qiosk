@@ -2,19 +2,17 @@
 
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GuestUploadController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\UserController;
+use App\Mail\NewUserRegistered;
+use App\Models\InvitationCode;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-
-use App\Models\InvitationCode;
-
-use App\Mail\NewUserRegistered;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/register', function (Request $request) {
     try {
@@ -34,7 +32,7 @@ Route::post('/register', function (Request $request) {
             })
             ->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return response()->json(['message' => 'Invalid or expired invitation code.'], 422);
         }
 
@@ -62,7 +60,7 @@ Route::post('/register', function (Request $request) {
                 Mail::to(env('ADMIN_NOTIFICATION_EMAIL'))->send(new NewUserRegistered($user));
             } catch (\Exception $e) {
                 // Log email error but don't fail registration
-                \Illuminate\Support\Facades\Log::error('Failed to send registration email: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Failed to send registration email: '.$e->getMessage());
             }
         }
 
@@ -72,8 +70,9 @@ Route::post('/register', function (Request $request) {
     } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
     } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Registration error: ' . $e->getMessage());
-        return response()->json(['message' => 'Registration failed: ' . $e->getMessage()], 500);
+        \Illuminate\Support\Facades\Log::error('Registration error: '.$e->getMessage());
+
+        return response()->json(['message' => 'Registration failed: '.$e->getMessage()], 500);
     }
 });
 
@@ -86,18 +85,25 @@ Route::post('/login', function (Request $request) {
 
         if (Auth::attempt($credentials)) {
             $token = $request->user()->createToken('api-token')->plainTextToken;
+
             return response()->json(['token' => $token]);
         }
 
         return response()->json(['message' => 'Unauthorized'], 401);
     } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Login error: ' . $e->getMessage());
-        return response()->json(['message' => 'Login failed: ' . $e->getMessage()], 500);
+        \Illuminate\Support\Facades\Log::error('Login error: '.$e->getMessage());
+
+        return response()->json(['message' => 'Login failed: '.$e->getMessage()], 500);
     }
 });
 
 Route::get('/playlists/{slug}/play', [PlaylistController::class, 'play']);
 Route::get('/playlists/{id}/play-by-id', [PlaylistController::class, 'playById']);
+
+// Guest upload routes (public, token-validated)
+Route::get('/playlists/{id}/upload-info', [GuestUploadController::class, 'getPlaylistInfo']);
+Route::post('/playlists/{id}/guest-upload', [GuestUploadController::class, 'store'])
+    ->middleware('throttle:guest-uploads');
 
 use App\Http\Controllers\InvitationCodeController;
 
@@ -112,4 +118,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('playlists', PlaylistController::class);
     Route::apiResource('users', UserController::class);
     Route::apiResource('invitations', InvitationCodeController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    // Pending uploads management
+    Route::get('/playlists/{id}/pending-uploads', [PlaylistController::class, 'pendingUploads']);
+    Route::post('/playlists/{id}/pending-uploads/{uploadId}/approve', [PlaylistController::class, 'approveUpload']);
+    Route::delete('/playlists/{id}/pending-uploads/{uploadId}', [PlaylistController::class, 'rejectUpload']);
+    Route::post('/playlists/{id}/regenerate-upload-token', [PlaylistController::class, 'regenerateUploadToken']);
 });

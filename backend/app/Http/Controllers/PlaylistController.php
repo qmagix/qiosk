@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PendingUpload;
 use App\Models\Playlist;
+use App\Models\PlaylistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -25,14 +27,23 @@ class PlaylistController extends Controller
             'name' => 'required|string|max:255',
             'orientation' => 'in:landscape,portrait',
             'visibility' => 'in:public,private',
+            'allow_uploads' => 'boolean',
+            'upload_mode' => 'in:auto_add,require_approval',
+            'qr_frequency' => 'integer|min:1|max:100',
         ]);
+
+        $allowUploads = $request->allow_uploads ?? false;
 
         $playlist = $request->user()->playlists()->create([
             'name' => $request->name,
-            'slug' => Str::slug($request->name) . '-' . Str::random(6),
+            'slug' => Str::slug($request->name).'-'.Str::random(6),
             'orientation' => $request->orientation ?? 'landscape',
             'visibility' => $request->visibility ?? 'private',
             'access_token' => ($request->visibility === 'private') ? Str::random(32) : null,
+            'allow_uploads' => $allowUploads,
+            'upload_token' => $allowUploads ? Str::random(32) : null,
+            'upload_mode' => $request->upload_mode ?? 'auto_add',
+            'qr_frequency' => $request->qr_frequency ?? 5,
         ]);
 
         return response()->json($playlist, 201);
@@ -44,6 +55,7 @@ class PlaylistController extends Controller
     public function show(Request $request, string $id)
     {
         $playlist = $request->user()->playlists()->with('items.asset')->findOrFail($id);
+
         return response()->json($playlist);
     }
 
@@ -58,6 +70,9 @@ class PlaylistController extends Controller
             'name' => 'sometimes|string|max:255',
             'orientation' => 'sometimes|in:landscape,portrait',
             'visibility' => 'sometimes|in:public,private',
+            'allow_uploads' => 'sometimes|boolean',
+            'upload_mode' => 'sometimes|in:auto_add,require_approval',
+            'qr_frequency' => 'sometimes|integer|min:1|max:100',
             'items' => 'sometimes|array',
             'items.*.asset_id' => 'required|exists:assets,id',
             'items.*.duration_seconds' => 'integer|min:0',
@@ -75,10 +90,27 @@ class PlaylistController extends Controller
 
         if ($request->has('visibility')) {
             $updates = ['visibility' => $request->visibility];
-            if ($request->visibility === 'private' && !$playlist->access_token) {
+            if ($request->visibility === 'private' && ! $playlist->access_token) {
                 $updates['access_token'] = Str::random(32);
             }
             $playlist->update($updates);
+        }
+
+        // Handle upload settings
+        if ($request->has('allow_uploads')) {
+            $updates = ['allow_uploads' => $request->allow_uploads];
+            if ($request->allow_uploads && ! $playlist->upload_token) {
+                $updates['upload_token'] = Str::random(32);
+            }
+            $playlist->update($updates);
+        }
+
+        if ($request->has('upload_mode')) {
+            $playlist->update(['upload_mode' => $request->upload_mode]);
+        }
+
+        if ($request->has('qr_frequency')) {
+            $playlist->update(['qr_frequency' => $request->qr_frequency]);
         }
 
         if ($request->has('items')) {
@@ -106,6 +138,7 @@ class PlaylistController extends Controller
     {
         $playlist = $request->user()->playlists()->findOrFail($id);
         $playlist->delete();
+
         return response()->noContent();
     }
 
@@ -122,13 +155,13 @@ class PlaylistController extends Controller
         $playlist = Playlist::where('slug', $slug)->with([
             'items' => function ($query) {
                 $query->orderBy('display_order')->with('asset');
-            }
+            },
         ])->firstOrFail();
 
-        // If private, we shouldn't allow access via just slug unless authenticated? 
+        // If private, we shouldn't allow access via just slug unless authenticated?
         // But this is the "public player" endpoint.
         // If it's private, we should probably deny unless it's the owner (but this is public endpoint).
-        // Let's leave slug access open for now or restrict it. 
+        // Let's leave slug access open for now or restrict it.
         // Given the new requirement is ID + Token, let's assume slug is for public only?
         // For safety, let's allow it if public.
         if ($playlist->visibility === 'private') {
@@ -146,16 +179,95 @@ class PlaylistController extends Controller
         $playlist = Playlist::with([
             'items' => function ($query) {
                 $query->orderBy('display_order')->with('asset');
-            }
+            },
         ])->findOrFail($id);
 
         if ($playlist->visibility === 'private') {
             $token = $request->query('token');
-            if (!$token || $token !== $playlist->access_token) {
+            if (! $token || $token !== $playlist->access_token) {
                 return response()->json(['message' => 'Unauthorized access to private playlist'], 403);
             }
         }
 
-        return response()->json($playlist);
+        // Include upload settings in response for the player
+        $response = $playlist->toArray();
+        if ($playlist->allow_uploads && $playlist->upload_token) {
+            $response['allow_uploads'] = true;
+            $response['upload_token'] = $playlist->upload_token;
+            $response['upload_mode'] = $playlist->upload_mode;
+            $response['qr_frequency'] = $playlist->qr_frequency;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Get pending uploads for a playlist.
+     */
+    public function pendingUploads(Request $request, string $id)
+    {
+        $playlist = $request->user()->playlists()->findOrFail($id);
+
+        $pending = $playlist->pendingUploads()
+            ->with('asset')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($pending);
+    }
+
+    /**
+     * Approve a pending upload.
+     */
+    public function approveUpload(Request $request, string $id, string $uploadId)
+    {
+        $playlist = $request->user()->playlists()->findOrFail($id);
+        $pendingUpload = PendingUpload::where('playlist_id', $playlist->id)
+            ->where('id', $uploadId)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        // Add to playlist
+        $maxOrder = $playlist->items()->max('display_order') ?? -1;
+        PlaylistItem::create([
+            'playlist_id' => $playlist->id,
+            'asset_id' => $pendingUpload->asset_id,
+            'display_order' => $maxOrder + 1,
+            'duration_seconds' => $pendingUpload->asset->type === 'image' ? 5 : 0,
+            'transition_effect' => 'fade',
+        ]);
+
+        // Update status
+        $pendingUpload->update(['status' => 'approved']);
+
+        return response()->json(['message' => 'Upload approved and added to playlist']);
+    }
+
+    /**
+     * Reject a pending upload.
+     */
+    public function rejectUpload(Request $request, string $id, string $uploadId)
+    {
+        $playlist = $request->user()->playlists()->findOrFail($id);
+        $pendingUpload = PendingUpload::where('playlist_id', $playlist->id)
+            ->where('id', $uploadId)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        // Update status (keep the record for audit)
+        $pendingUpload->update(['status' => 'rejected']);
+
+        return response()->json(['message' => 'Upload rejected']);
+    }
+
+    /**
+     * Regenerate upload token.
+     */
+    public function regenerateUploadToken(Request $request, string $id)
+    {
+        $playlist = $request->user()->playlists()->findOrFail($id);
+        $playlist->update(['upload_token' => Str::random(32)]);
+
+        return response()->json(['upload_token' => $playlist->upload_token]);
     }
 }

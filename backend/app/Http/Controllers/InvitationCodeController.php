@@ -48,7 +48,7 @@ class InvitationCodeController extends Controller
         $invitation = InvitationCode::findOrFail($id);
 
         $request->validate([
-            'code' => 'required|string|max:255|unique:invitation_codes,code,' . $id,
+            'code' => 'required|string|max:255|unique:invitation_codes,code,'.$id,
             'is_used' => 'boolean',
         ]);
 
@@ -58,7 +58,7 @@ class InvitationCodeController extends Controller
         ]);
 
         // If marked as unused, clear the used_by field
-        if (!$request->is_used) {
+        if (! $request->is_used) {
             $invitation->update(['used_by' => null]);
         }
 

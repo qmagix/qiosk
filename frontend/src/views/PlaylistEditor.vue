@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import draggable from 'vuedraggable'
 import ImageCropperModal from '../components/ImageCropperModal.vue'
+import QrCode from '../components/QrCode.vue'
 
 const route = useRoute()
 const playlistId = route.params.id
@@ -19,6 +20,10 @@ const showCropper = ref(false)
 const croppingItemIndex = ref(null)
 const currentCropImage = ref('')
 const currentCropData = ref(null)
+
+// Upload Settings State
+const pendingUploads = ref([])
+const showUploadQrModal = ref(false)
 
 // Computed properties for visual feedback
 const orientation = computed(() => playlist.value?.orientation || 'landscape')
@@ -170,6 +175,110 @@ const copyUrl = () => {
   }
 }
 
+// Upload Settings Methods
+const getUploadUrl = () => {
+  if (!playlist.value || !playlist.value.allow_uploads || !playlist.value.upload_token) return ''
+  const baseUrl = window.location.origin
+  return `${baseUrl}/upload/${playlist.value.id}/${playlist.value.upload_token}`
+}
+
+const copyUploadUrl = () => {
+  const url = getUploadUrl()
+  if (url) {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Upload URL copied to clipboard!')
+    })
+  }
+}
+
+const toggleUploads = async () => {
+  const newValue = !playlist.value.allow_uploads
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.put(`/api/playlists/${playlistId}`, {
+      allow_uploads: newValue
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    playlist.value = response.data
+    if (newValue) {
+      fetchPendingUploads()
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Failed to update upload settings')
+  }
+}
+
+const updateUploadMode = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.put(`/api/playlists/${playlistId}`, {
+      upload_mode: playlist.value.upload_mode
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    playlist.value = response.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const updateQrFrequency = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.put(`/api/playlists/${playlistId}`, {
+      qr_frequency: playlist.value.qr_frequency
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    playlist.value = response.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const fetchPendingUploads = async () => {
+  if (!playlist.value?.allow_uploads) return
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.get(`/api/playlists/${playlistId}/pending-uploads`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    pendingUploads.value = response.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const approveUpload = async (uploadId) => {
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post(`/api/playlists/${playlistId}/pending-uploads/${uploadId}/approve`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    await fetchPendingUploads()
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to approve upload')
+  }
+}
+
+const rejectUpload = async (uploadId) => {
+  if (!confirm('Are you sure you want to reject this upload?')) return
+  try {
+    const token = localStorage.getItem('token')
+    await axios.delete(`/api/playlists/${playlistId}/pending-uploads/${uploadId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    await fetchPendingUploads()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to reject upload')
+  }
+}
+
 // Helper to generate style for cropped thumbnail
 const getThumbnailStyle = (item) => {
   if (!item.crop_data) return {}
@@ -199,7 +308,10 @@ const getThumbnailStyle = (item) => {
   return {}
 }
 
-onMounted(fetchData)
+onMounted(async () => {
+  await fetchData()
+  fetchPendingUploads()
+})
 </script>
 
 <template>
@@ -235,6 +347,52 @@ onMounted(fetchData)
                   <button @click="copyUrl" class="ml-2 text-blue-600 hover:text-blue-800 text-xs font-bold">COPY</button>
                 </div>
              </div>
+          </div>
+
+          <!-- Upload Settings Row -->
+          <div v-if="playlist" class="mt-2 flex flex-wrap items-center gap-4 pt-2 border-t">
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-gray-600">Guest Uploads:</label>
+              <button
+                @click="toggleUploads"
+                :class="playlist.allow_uploads ? 'bg-green-500' : 'bg-gray-300'"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              >
+                <span
+                  :class="playlist.allow_uploads ? 'translate-x-6' : 'translate-x-1'"
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                />
+              </button>
+            </div>
+
+            <template v-if="playlist.allow_uploads">
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600">Mode:</label>
+                <select v-model="playlist.upload_mode" @change="updateUploadMode" class="border rounded px-2 py-1 text-sm">
+                  <option value="auto_add">Auto-add</option>
+                  <option value="require_approval">Require Approval</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600">QR every:</label>
+                <input
+                  type="number"
+                  v-model.number="playlist.qr_frequency"
+                  @change="updateQrFrequency"
+                  class="w-16 border rounded px-2 py-1 text-sm"
+                  min="1"
+                  max="100"
+                >
+                <span class="text-sm text-gray-500">items</span>
+              </div>
+
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-gray-600">Upload URL:</span>
+                <button @click="copyUploadUrl" class="text-blue-600 hover:text-blue-800 text-xs font-bold">COPY</button>
+                <button @click="showUploadQrModal = true" class="text-blue-600 hover:text-blue-800 text-xs font-bold">QR</button>
+              </div>
+            </template>
           </div>
         </div>
         <div class="flex gap-2">
@@ -387,5 +545,39 @@ onMounted(fetchData)
       @save="saveCrop"
       @cancel="showCropper = false"
     />
+
+    <!-- Upload QR Modal -->
+    <div v-if="showUploadQrModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg text-center">
+        <h3 class="text-lg font-bold mb-4">Scan to Upload</h3>
+        <QrCode :value="getUploadUrl()" :size="200" />
+        <p class="text-sm text-gray-500 mt-4 max-w-[200px] break-all">{{ getUploadUrl() }}</p>
+        <button @click="showUploadQrModal = false" class="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Close</button>
+      </div>
+    </div>
+
+    <!-- Pending Uploads Panel -->
+    <div v-if="playlist?.allow_uploads && playlist?.upload_mode === 'require_approval' && pendingUploads.length > 0"
+         class="fixed bottom-4 right-4 bg-white rounded-lg shadow-xl p-4 max-w-sm max-h-96 overflow-y-auto z-40">
+      <h4 class="font-bold text-sm mb-3 flex items-center gap-2">
+        <span class="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">{{ pendingUploads.length }}</span>
+        Pending Uploads
+      </h4>
+      <div class="space-y-2">
+        <div v-for="upload in pendingUploads" :key="upload.id" class="flex items-center gap-3 p-2 bg-gray-50 rounded">
+          <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+            <img v-if="upload.asset?.type === 'image'" :src="upload.asset?.url" class="w-full h-full object-cover">
+            <div v-else class="w-full h-full flex items-center justify-center text-xs text-gray-500">VID</div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs truncate">{{ upload.asset?.filename }}</p>
+          </div>
+          <div class="flex gap-1">
+            <button @click="approveUpload(upload.id)" class="text-green-600 hover:text-green-800 text-lg" title="Approve">✓</button>
+            <button @click="rejectUpload(upload.id)" class="text-red-600 hover:text-red-800 text-lg" title="Reject">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

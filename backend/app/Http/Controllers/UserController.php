@@ -13,7 +13,7 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (!$currentUser->isAdmin()) {
+        if (! $currentUser->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -26,7 +26,7 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (!$currentUser->isAdmin()) {
+        if (! $currentUser->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -38,8 +38,8 @@ class UserController extends Controller
         ]);
 
         // Only superadmin can create superadmins or admins
-        if (($request->role === 'superadmin' || $request->role === 'admin') && !$currentUser->isSuperAdmin()) {
-             return response()->json(['message' => 'Only Superadmin can create admins'], 403);
+        if (($request->role === 'superadmin' || $request->role === 'admin') && ! $currentUser->isSuperAdmin()) {
+            return response()->json(['message' => 'Only Superadmin can create admins'], 403);
         }
 
         $user = User::create([
@@ -56,12 +56,12 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (!$currentUser->isAdmin()) {
+        if (! $currentUser->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         // Prevent admin from modifying superadmin
-        if ($user->isSuperAdmin() && !$currentUser->isSuperAdmin()) {
+        if ($user->isSuperAdmin() && ! $currentUser->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -74,9 +74,9 @@ class UserController extends Controller
 
         // Only superadmin can assign admin/superadmin roles
         if ($request->has('role')) {
-             if (($request->role === 'superadmin' || $request->role === 'admin') && !$currentUser->isSuperAdmin()) {
-                 return response()->json(['message' => 'Only Superadmin can assign admin roles'], 403);
-             }
+            if (($request->role === 'superadmin' || $request->role === 'admin') && ! $currentUser->isSuperAdmin()) {
+                return response()->json(['message' => 'Only Superadmin can assign admin roles'], 403);
+            }
         }
 
         $data = $request->only(['name', 'email', 'role']);
@@ -93,17 +93,17 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (!$currentUser->isAdmin()) {
+        if (! $currentUser->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         // Prevent admin from deleting superadmin
         if ($user->isSuperAdmin()) {
-             return response()->json(['message' => 'Cannot delete Superadmin'], 403);
+            return response()->json(['message' => 'Cannot delete Superadmin'], 403);
         }
 
         // Prevent admin from deleting other admins (optional, but safer)
-        if ($user->isAdmin() && !$currentUser->isSuperAdmin()) {
+        if ($user->isAdmin() && ! $currentUser->isSuperAdmin()) {
             return response()->json(['message' => 'Only Superadmin can delete admins'], 403);
         }
 

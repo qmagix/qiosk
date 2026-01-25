@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { offlineManager } from '../services/OfflineManager'
+import QrCode from './QrCode.vue'
 
 const props = defineProps({
   playlist: {
@@ -30,6 +31,23 @@ const timer = ref(null)
 const isLoading = ref(false)
 const error = ref('')
 const pollInterval = ref(null)
+
+// QR Code / Upload settings
+const playlistData = ref(null)
+const showQrOverlay = ref(false)
+const qrDisplayCount = ref(0)
+const QR_DISPLAY_DURATION_MS = 6000
+
+const uploadUrl = computed(() => {
+  if (!playlistData.value?.allow_uploads || !playlistData.value?.upload_token) {
+    return null
+  }
+  return `${window.location.origin}/upload/${playlistData.value.id}/${playlistData.value.upload_token}`
+})
+
+const qrFrequency = computed(() => {
+  return playlistData.value?.qr_frequency || 5
+})
 
 const activePlaylist = computed(() => {
   return props.playlist.length ? props.playlist : localPlaylist.value
@@ -106,6 +124,9 @@ async function fetchPlaylist(isPolling = false) {
     }
     
     playlistOrientation.value = response.data.orientation || 'landscape'
+
+    // Store full playlist data for upload settings
+    playlistData.value = response.data
 
     const newItems = response.data.items.map(item => ({
       id: item.id,
@@ -185,7 +206,22 @@ function stop() {
 
 function next() {
   currentIndex.value = nextIndex.value
+  qrDisplayCount.value++
+
+  // Show QR every N items if uploads enabled
+  if (uploadUrl.value && qrDisplayCount.value >= qrFrequency.value) {
+    showQrCode()
+    qrDisplayCount.value = 0
+  }
+
   scheduleNext()
+}
+
+function showQrCode() {
+  showQrOverlay.value = true
+  setTimeout(() => {
+    showQrOverlay.value = false
+  }, QR_DISPLAY_DURATION_MS)
 }
 
 function scheduleNext() {
@@ -339,6 +375,16 @@ function getMediaStyle(item) {
           No media to display
         </div>
       </Transition>
+
+      <!-- QR Code Overlay -->
+      <Transition name="fade-quick">
+        <div v-if="showQrOverlay && uploadUrl" class="qr-overlay">
+          <div class="qr-container">
+            <QrCode :value="uploadUrl" :size="120" />
+            <p class="qr-label">Scan to add photos</p>
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -435,6 +481,42 @@ function getMediaStyle(item) {
 
 .zoom-leave-to {
   transform: scale(0.5);
+  opacity: 0;
+}
+
+/* QR Code Overlay */
+.qr-overlay {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.qr-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.qr-label {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  font-family: sans-serif;
+}
+
+/* Quick Fade for QR */
+.fade-quick-enter-active,
+.fade-quick-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-quick-enter-from,
+.fade-quick-leave-to {
   opacity: 0;
 }
 </style>

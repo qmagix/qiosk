@@ -21,7 +21,7 @@ class DashboardController extends Controller
                 'total_playlists' => Playlist::count(),
                 'total_assets' => Asset::count(),
                 'recent_signups' => User::latest()->take(5)->get(['id', 'name', 'email', 'created_at', 'role']),
-                'storage_usage' => 0 // Placeholder if we want to calculate file sizes later
+                'storage_usage' => 0, // Placeholder if we want to calculate file sizes later
             ];
         } else {
             $stats = [

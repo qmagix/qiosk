@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Asset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -69,7 +68,7 @@ class AssetController extends Controller
         // We rely on Bucket Policy for public access.
         $path = $file->store('assets', $disk);
 
-        if (!$path) {
+        if (! $path) {
             return response()->json(['message' => 'Failed to store file'], 500);
         }
 
@@ -111,6 +110,7 @@ class AssetController extends Controller
     {
         $asset = $request->user()->assets()->findOrFail($id);
         $asset->delete();
+
         return response()->noContent();
     }
 }
