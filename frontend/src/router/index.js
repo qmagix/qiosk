@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router
 import MediaPlayer from '../components/MediaPlayer.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import ForgotPasswordView from '../views/ForgotPasswordView.vue'
+import ResetPasswordView from '../views/ResetPasswordView.vue'
 import AdminLayout from '../views/AdminLayout.vue'
 import AssetManager from '../views/AssetManager.vue'
 import PlaylistManager from '../views/PlaylistManager.vue'
@@ -47,6 +49,16 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPasswordView
+    },
+    {
+      path: '/reset-password/:token',
+      name: 'reset-password',
+      component: ResetPasswordView
     },
     {
       path: '/admin',

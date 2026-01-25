@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GuestUploadController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\UserController;
 use App\Mail\NewUserRegistered;
@@ -96,6 +97,10 @@ Route::post('/login', function (Request $request) {
         return response()->json(['message' => 'Login failed: '.$e->getMessage()], 500);
     }
 });
+
+// Password reset routes (public)
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 Route::get('/playlists/{slug}/play', [PlaylistController::class, 'play']);
 Route::get('/playlists/{id}/play-by-id', [PlaylistController::class, 'playById']);

@@ -57,12 +57,15 @@ const handleLogin = async () => {
           <p v-if="error" class="text-red-500 text-xs italic">{{ error }}</p>
         </div>
         <div class="flex items-center justify-between flex-col gap-4">
-          <button 
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" 
+          <button
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
             type="submit"
           >
             Sign In
           </button>
+          <router-link to="/forgot-password" class="text-blue-500 hover:text-blue-800 text-sm">
+            Forgot Password?
+          </router-link>
           <router-link to="/register" class="text-blue-500 hover:text-blue-800 text-sm">
             Need an account? Register
           </router-link>
