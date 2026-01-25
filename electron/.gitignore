@@ -3,3 +3,6 @@ dist
 out
 build
 .DS_Store
+config.json
+renderer
+run.sh

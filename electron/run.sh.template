@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# EyePub Electron Player - Development Runner
+# 
+# This script makes it easy to run the Electron app with a specific URL
+# Edit the ELECTRON_START_URL below to point to your desired playlist or page
+
+# Examples:
+# ELECTRON_START_URL=https://eyepub.com/p/abc123 npm start
+# ELECTRON_START_URL=https://eyepub.com/play/my-playlist npm start
+# ELECTRON_START_URL=http://localhost:5173 npm start
+
+# Set your URL here:
+ELECTRON_START_URL=https://www.eyepub.com npm start

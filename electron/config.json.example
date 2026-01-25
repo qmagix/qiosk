@@ -1,0 +1,9 @@
+{
+  "defaultUrl": null,
+  "comment": "Set defaultUrl to a URL or route to load on startup. Examples:",
+  "examples": {
+    "remote_server": "https://yourdomain.com/p/abc123",
+    "local_route": "/p/abc123",
+    "homepage": "/"
+  }
+}
