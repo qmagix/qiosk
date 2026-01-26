@@ -56,8 +56,9 @@ const fetchData = async () => {
     ])
 
     playlist.value = playlistRes.data
-    // Map existing items to a mutable structure
-    playlistItems.value = playlistRes.data.items.map(item => ({
+    // Map existing items to a mutable structure (handle empty/null items)
+    const items = playlistRes.data.items || []
+    playlistItems.value = items.map(item => ({
       asset_id: item.asset.id,
       url: item.asset.url,
       filename: item.asset.filename,
@@ -68,7 +69,7 @@ const fetchData = async () => {
       uniqueId: Math.random().toString(36).substr(2, 9) // for drag key
     }))
 
-    availableAssets.value = assetsRes.data
+    availableAssets.value = assetsRes.data || []
   } catch (e) {
     console.error(e)
     alert('Failed to load data')
@@ -488,8 +489,10 @@ onMounted(async () => {
           </template>
         </draggable>
         
-        <div v-if="playlistItems.length === 0" class="text-center text-gray-500 mt-10">
-          Playlist is empty. Add assets from the right.
+        <div v-if="playlistItems.length === 0" class="text-center mt-10 px-8">
+          <div class="text-4xl mb-3">🎬</div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">Welcome to your new playlist!</h3>
+          <p class="text-gray-500">Click on any asset from the library on the right to add it here. You can drag to reorder, set durations, and add transitions.</p>
         </div>
       </div>
     </div>
@@ -530,8 +533,9 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div v-if="availableAssets.length === 0" class="text-center text-gray-500 mt-10">
-          No assets found. Upload some in the Asset Manager.
+        <div v-if="availableAssets.length === 0" class="text-center mt-10 px-4">
+          <div class="text-3xl mb-2">📁</div>
+          <p class="text-gray-500 text-sm">No assets yet. Go to <router-link to="/admin/assets" class="text-blue-500 hover:underline">Assets</router-link> to upload images and videos.</p>
         </div>
       </div>
     </div>
