@@ -1,13 +1,15 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import draggable from 'vuedraggable'
 import ImageCropperModal from '../components/ImageCropperModal.vue'
 import QrCode from '../components/QrCode.vue'
 
 const route = useRoute()
-const playlistId = route.params.id
+const router = useRouter()
+const playlistId = ref(route.params.id)
+const isNewPlaylist = computed(() => playlistId.value === 'new')
 
 const playlist = ref(null)
 const availableAssets = ref([])
@@ -50,26 +52,41 @@ const fetchData = async () => {
     const token = localStorage.getItem('token')
     const headers = { Authorization: `Bearer ${token}` }
 
-    const [playlistRes, assetsRes] = await Promise.all([
-      axios.get(`/api/playlists/${playlistId}`, { headers }),
-      axios.get(`/api/assets`, { headers })
-    ])
+    if (isNewPlaylist.value) {
+      // Creating a new playlist - only fetch assets
+      const assetsRes = await axios.get(`/api/assets`, { headers })
+      availableAssets.value = assetsRes.data || []
+      // Initialize empty playlist object
+      playlist.value = {
+        name: '',
+        orientation: 'landscape',
+        visibility: 'public',
+        items: []
+      }
+      playlistItems.value = []
+    } else {
+      // Editing existing playlist - fetch both
+      const [playlistRes, assetsRes] = await Promise.all([
+        axios.get(`/api/playlists/${playlistId.value}`, { headers }),
+        axios.get(`/api/assets`, { headers })
+      ])
 
-    playlist.value = playlistRes.data
-    // Map existing items to a mutable structure (handle empty/null items)
-    const items = playlistRes.data.items || []
-    playlistItems.value = items.map(item => ({
-      asset_id: item.asset.id,
-      url: item.asset.url,
-      filename: item.asset.filename,
-      type: item.asset.type,
-      duration_seconds: item.duration_seconds,
-      transition_effect: item.transition_effect,
-      crop_data: item.crop_data,
-      uniqueId: Math.random().toString(36).substr(2, 9) // for drag key
-    }))
+      playlist.value = playlistRes.data
+      // Map existing items to a mutable structure (handle empty/null items)
+      const items = playlistRes.data.items || []
+      playlistItems.value = items.map(item => ({
+        asset_id: item.asset.id,
+        url: item.asset.url,
+        filename: item.asset.filename,
+        type: item.asset.type,
+        duration_seconds: item.duration_seconds,
+        transition_effect: item.transition_effect,
+        crop_data: item.crop_data,
+        uniqueId: Math.random().toString(36).substr(2, 9) // for drag key
+      }))
 
-    availableAssets.value = assetsRes.data || []
+      availableAssets.value = assetsRes.data || []
+    }
   } catch (e) {
     console.error(e)
     alert('Failed to load data')
@@ -129,23 +146,51 @@ const savePlaylist = async () => {
   isSaving.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.put(`/api/playlists/${playlistId}`, {
-      orientation: playlist.value.orientation,
-      visibility: playlist.value.visibility,
-      items: playlistItems.value.map(item => ({
-        asset_id: item.asset_id,
-        duration_seconds: item.duration_seconds,
-        transition_effect: item.transition_effect,
-        crop_data: item.crop_data
-      }))
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    
-    // Update local playlist data (especially for access_token if it changed)
-    playlist.value = response.data
-    
-    alert('Playlist saved!')
+    const headers = { Authorization: `Bearer ${token}` }
+
+    if (isNewPlaylist.value) {
+      // Creating a new playlist
+      if (!playlist.value.name || !playlist.value.name.trim()) {
+        alert('Please enter a playlist name')
+        isSaving.value = false
+        return
+      }
+
+      const response = await axios.post(`/api/playlists`, {
+        name: playlist.value.name,
+        orientation: playlist.value.orientation,
+        visibility: playlist.value.visibility,
+        items: playlistItems.value.map(item => ({
+          asset_id: item.asset_id,
+          duration_seconds: item.duration_seconds,
+          transition_effect: item.transition_effect,
+          crop_data: item.crop_data
+        }))
+      }, { headers })
+
+      // Update local state and redirect to the new playlist
+      playlist.value = response.data
+      playlistId.value = response.data.id
+      router.replace(`/admin/playlists/${response.data.id}`)
+      alert('Playlist created!')
+    } else {
+      // Updating existing playlist
+      const response = await axios.put(`/api/playlists/${playlistId.value}`, {
+        name: playlist.value.name,
+        orientation: playlist.value.orientation,
+        visibility: playlist.value.visibility,
+        items: playlistItems.value.map(item => ({
+          asset_id: item.asset_id,
+          duration_seconds: item.duration_seconds,
+          transition_effect: item.transition_effect,
+          crop_data: item.crop_data
+        }))
+      }, { headers })
+
+      // Update local playlist data (especially for access_token if it changed)
+      playlist.value = response.data
+      alert('Playlist saved!')
+    }
   } catch (e) {
     console.error(e)
     alert('Failed to save')
@@ -196,7 +241,7 @@ const toggleUploads = async () => {
   const newValue = !playlist.value.allow_uploads
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.put(`/api/playlists/${playlistId}`, {
+    const response = await axios.put(`/api/playlists/${playlistId.value}`, {
       allow_uploads: newValue
     }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -214,7 +259,7 @@ const toggleUploads = async () => {
 const updateUploadMode = async () => {
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.put(`/api/playlists/${playlistId}`, {
+    const response = await axios.put(`/api/playlists/${playlistId.value}`, {
       upload_mode: playlist.value.upload_mode
     }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -228,7 +273,7 @@ const updateUploadMode = async () => {
 const updateQrFrequency = async () => {
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.put(`/api/playlists/${playlistId}`, {
+    const response = await axios.put(`/api/playlists/${playlistId.value}`, {
       qr_frequency: playlist.value.qr_frequency
     }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -243,7 +288,7 @@ const fetchPendingUploads = async () => {
   if (!playlist.value?.allow_uploads) return
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.get(`/api/playlists/${playlistId}/pending-uploads`, {
+    const response = await axios.get(`/api/playlists/${playlistId.value}/pending-uploads`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     pendingUploads.value = response.data
@@ -255,7 +300,7 @@ const fetchPendingUploads = async () => {
 const approveUpload = async (uploadId) => {
   try {
     const token = localStorage.getItem('token')
-    await axios.post(`/api/playlists/${playlistId}/pending-uploads/${uploadId}/approve`, {}, {
+    await axios.post(`/api/playlists/${playlistId.value}/pending-uploads/${uploadId}/approve`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
     await fetchPendingUploads()
@@ -270,7 +315,7 @@ const rejectUpload = async (uploadId) => {
   if (!confirm('Are you sure you want to reject this upload?')) return
   try {
     const token = localStorage.getItem('token')
-    await axios.delete(`/api/playlists/${playlistId}/pending-uploads/${uploadId}`, {
+    await axios.delete(`/api/playlists/${playlistId.value}/pending-uploads/${uploadId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     await fetchPendingUploads()
@@ -321,10 +366,24 @@ onMounted(async () => {
     <div class="w-2/3 flex flex-col">
       <div class="flex justify-between items-center mb-4">
         <div>
-          <h2 class="text-xl font-bold">
+          <h2 class="text-xl font-bold" v-if="isNewPlaylist">
+            Create New Playlist
+          </h2>
+          <h2 class="text-xl font-bold" v-else>
             Editing: {{ playlist?.name }}
           </h2>
           <div class="mt-1 flex flex-wrap items-center gap-4" v-if="playlist">
+             <!-- Name input for new playlist -->
+             <div v-if="isNewPlaylist" class="flex items-center gap-2">
+               <label class="text-sm text-gray-600">Name:</label>
+               <input
+                 v-model="playlist.name"
+                 type="text"
+                 placeholder="Enter playlist name"
+                 class="border rounded px-2 py-1 text-sm w-48"
+               >
+             </div>
+
              <div class="flex items-center gap-2">
                <label class="text-sm text-gray-600">Orientation:</label>
                <select v-model="playlist.orientation" class="border rounded px-2 py-1 text-sm">
@@ -341,7 +400,7 @@ onMounted(async () => {
                </select>
              </div>
 
-             <div class="flex items-center gap-2 text-sm">
+             <div v-if="!isNewPlaylist" class="flex items-center gap-2 text-sm">
                 <span class="text-gray-600">URL:</span>
                 <div class="flex items-center bg-gray-100 rounded px-2 py-1">
                   <span class="truncate max-w-[200px] text-gray-800 select-all">{{ getPlaylistUrl() }}</span>
@@ -350,8 +409,8 @@ onMounted(async () => {
              </div>
           </div>
 
-          <!-- Upload Settings Row -->
-          <div v-if="playlist" class="mt-2 flex flex-wrap items-center gap-4 pt-2 border-t">
+          <!-- Upload Settings Row (only for existing playlists) -->
+          <div v-if="playlist && !isNewPlaylist" class="mt-2 flex flex-wrap items-center gap-4 pt-2 border-t">
             <div class="flex items-center gap-2">
               <label class="text-sm text-gray-600">Guest Uploads:</label>
               <button
@@ -397,19 +456,20 @@ onMounted(async () => {
           </div>
         </div>
         <div class="flex gap-2">
-          <button 
-            @click="previewPlaylist" 
+          <button
+            v-if="!isNewPlaylist"
+            @click="previewPlaylist"
             class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
             :disabled="isSaving"
           >
             Save & Preview
           </button>
-          <button 
-            @click="savePlaylist" 
+          <button
+            @click="savePlaylist"
             class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             :disabled="isSaving"
           >
-            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+            {{ isSaving ? 'Saving...' : (isNewPlaylist ? 'Create Playlist' : 'Save Changes') }}
           </button>
         </div>
       </div>
